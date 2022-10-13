@@ -10,7 +10,7 @@ from FlaskMongoengineBoilerplate import app
 from FlaskMongoengineBoilerplate.database import database_layer
 from FlaskMongoengineBoilerplate.config import config
 from FlaskMongoengineBoilerplate.models import token_model
-from FlaskMongoengineBoilerplate.utils import constants, common_utils
+from FlaskMongoengineBoilerplate.utils import constants, common_utils, user_utils
 
 
 def generate_session_token(user):
@@ -18,7 +18,8 @@ def generate_session_token(user):
     This function generates a new session token for logging a user
     :return token:
     """
-    token_jwt = jwt.encode(payload={"user": user}, key="secret", algorithm="HS256")
+    token_jwt = jwt.encode(payload={"user": user_utils.get_user_object(user=user)}, key="secret", algorithm="HS256")
+    token_jwt = common_utils.convert_byte_to_string(token_jwt)
     token = str(token_jwt) + "-" + str(uuid.uuid4())
 
     insert_filter = {constants.USER: user, constants.TOKEN: token,
@@ -53,6 +54,8 @@ def check_current_user():
         set_current_user(user=current_user)
     else:
         print("User not found")
+
+    return current_user
 
 
 def set_current_user(user):

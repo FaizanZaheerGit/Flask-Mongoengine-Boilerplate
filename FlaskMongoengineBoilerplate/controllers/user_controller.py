@@ -4,7 +4,7 @@
 
 # Local imports
 from FlaskMongoengineBoilerplate.database import database_layer
-from FlaskMongoengineBoilerplate.models import user_model
+from FlaskMongoengineBoilerplate.models import user_model, token_model
 from FlaskMongoengineBoilerplate.config import static_data
 from FlaskMongoengineBoilerplate.utils import responses, constants, user_utils, common_utils, token_utils
 
@@ -138,13 +138,18 @@ def update_user_controller(data):
         return None, responses.CODE_UNAUTHORIZED_ACCESS, responses.MESSAGE_UNAUTHORIZED_ACCESS
 
     user_update_data = data
+    uid = data[constants.UID]
     user_update_data.pop(constants.UID)
     user_updatable_fields = [constants.NAME, constants.STATUS, constants.GENDER, constants.DATE_OF_BIRTH]
     filtered_user_update_data = common_utils.get_filtered_items(filter_list=user_updatable_fields,
                                                                 data=user_update_data)
 
+    if filtered_user_update_data.get(constants.STATUS):
+        if filtered_user_update_data[constants.STATUS][constants.ID] != 1:
+            token_utils.destroy_user_session_tokens(user=user)
+
     updated_user = database_layer.modify_records(collection=user_model.User,
-                                                 read_filter={constants.UID: data[constants.UID]},
+                                                 read_filter={constants.UID: uid},
                                                  update_filter=filtered_user_update_data)
 
     return user_utils.get_user_object(user=updated_user), responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
@@ -165,6 +170,7 @@ def delete_user_controller(uid):
     if not existing_user:
         return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
 
+    database_layer.delete_record(collection=token_model.Token, delete_filter={constants.USER: existing_user})
     database_layer.delete_record(collection=user_model.User, delete_filter={constants.UID: uid})
     return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
 

@@ -55,7 +55,7 @@ def validator(required_fields=[], optional_fields=[]):
             if missing_list:
                 response_obj = responses.get_response_object(response_code=responses.CODE_MISSING_PARAMETERS,
                                                              response_message=responses.MESSAGE_MISSING_PARAMETERS
-                                                             + ": " + missing_list)
+                                                             + ": " + str(missing_list))
                 app.logger.error(f" {request.method} {request.url} \nHeaders: {dict(request.headers)} \n"
                                  f"Body: {common_utils.get_posted_data()}", exc_info=1)
                 return jsonify(response_obj)
