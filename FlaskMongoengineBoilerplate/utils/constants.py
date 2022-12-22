@@ -17,3 +17,42 @@ USER = "user"
 TOKEN = "token"
 EXPIRY_TIME = "expiry_time"
 IS_EXPIRED = "is_expired"
+IMAGE = "image"
+
+# EXTENSION
+XLS = "xls"
+XLSX = "xlsx"
+CSV = "csv"
+PDF = "pdf"
+JPG = "jpg"
+JPEG = "jpeg"
+PNG = "png"
+DOCX = "docx"
+MP3 = "mp3"
+MP4 = "mp4"
+IMAGE_FORMATS = [PNG, JPG, JPEG]
+EXCEL_FORMATS = [XLS, XLSX, CSV]
+MEDICAL_RECORD_FORMAT = [PNG, JPG, JPEG, PDF]
+FILE_FORMATS = [PNG, JPG, JPEG, XLS, XLSX, CSV, PDF, DOCX, MP3, MP4]
+
+
+# FIREBASE
+FCM_API_KEY = "FCM_API_KEY"
+MAPPERS_EXTENSION = {
+    XLS: "application/vnd.ms-excel",
+    XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    CSV: "text/csv",
+    JPG: "image/jpeg",
+    JPEG: "image/jpeg",
+    PDF: "application/pdf",
+    PNG: "image/png",
+    MP4: "video/mp4",
+    MP3: "audio/mpeg",
+    DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+}
+
+EXCEL_CONTENT_TYPES = [MAPPERS_EXTENSION[XLS], MAPPERS_EXTENSION[XLSX], MAPPERS_EXTENSION[CSV]]
+IMAGE_CONTENT_TYPES = [MAPPERS_EXTENSION[PNG], MAPPERS_EXTENSION[JPG], MAPPERS_EXTENSION[JPEG]]
+DOCUMENT_CONTENT_TYPES = [MAPPERS_EXTENSION[XLS], MAPPERS_EXTENSION[XLSX], MAPPERS_EXTENSION[CSV],
+                          MAPPERS_EXTENSION[PNG], MAPPERS_EXTENSION[JPG], MAPPERS_EXTENSION[JPEG],
+                          MAPPERS_EXTENSION[MP4], MAPPERS_EXTENSION[MP3], MAPPERS_EXTENSION[DOCX]]

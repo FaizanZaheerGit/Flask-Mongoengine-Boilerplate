@@ -1,4 +1,6 @@
 # Python imports
+import uuid
+from datetime import datetime
 
 # Framework Imports
 
@@ -7,6 +9,7 @@ from FlaskMongoengineBoilerplate.database import database_layer
 from FlaskMongoengineBoilerplate.models import user_model, token_model
 from FlaskMongoengineBoilerplate.config import static_data
 from FlaskMongoengineBoilerplate.utils import responses, constants, user_utils, common_utils, token_utils
+from FlaskMongoengineBoilerplate import firebase_app
 
 
 def create_user_controller(data):
@@ -34,6 +37,10 @@ def create_user_controller(data):
         if not valid_date:
             return None, responses.CODE_INVALID_VALUE, \
                 responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"
+
+    if data.get(constants.IMAGE):
+        if type(data[constants.IMAGE]) != str:
+            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)
 
     if type(data[constants.EMAIL_ADDRESS]) != str:
         return None, responses.CODE_INVALID_DATA_TYPE, \
@@ -127,6 +134,10 @@ def update_user_controller(data):
         if not valid_date:
             return None, responses.CODE_INVALID_VALUE, \
                 responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"
+
+    if data.get(constants.IMAGE):
+        if type(data[constants.IMAGE]) != str:
+            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)
 
     user = database_layer.read_single_record(collection=user_model.User,
                                              read_filter={constants.UID: data[constants.UID]})
@@ -228,3 +239,21 @@ def logout_user_controller(token):
     """
     token_utils.expire_token(token)
     return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+
+def upload_image_controller(_file):
+    """
+    This function uploads a file to firebase storage bucket and returns url
+    :param _file:
+    :return string of url for firebase uploaded image:
+    """
+    if not _file:
+        return None, responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS
+
+    file_name = str(uuid.uuid4()) + "_" + datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
+
+    extension = _file.filename.split('.')[-1]
+
+    url = firebase_app.upload_file_using_string(source_file=_file.stream.read(), filename=file_name, extension=extension, content_type=_file.content_type)
+
+    return url, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS

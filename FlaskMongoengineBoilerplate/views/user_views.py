@@ -12,7 +12,7 @@ from FlaskMongoengineBoilerplate.utils import responses, decorators, constants, 
 @app.route("/api/user/create", methods=["POST"])
 @decorators.logging
 @decorators.validator(required_fields=[constants.NAME, constants.EMAIL_ADDRESS, constants.PASSWORD, constants.GENDER],
-                      optional_fields=[constants.DATE_OF_BIRTH])
+                      optional_fields=[constants.DATE_OF_BIRTH, constants.IMAGE])
 def create_user_view(data):
     """
     This API creates a new user
@@ -57,7 +57,7 @@ def read_user_view():
 @decorators.logging
 @decorators.is_authenticated
 @decorators.validator(required_fields=[constants.UID],
-                      optional_fields=[constants.NAME, constants.GENDER, constants.DATE_OF_BIRTH, constants.STATUS])
+                      optional_fields=[constants.NAME, constants.GENDER, constants.DATE_OF_BIRTH, constants.STATUS, constants.IMAGE])
 def update_user_view(data):
     """
     This API updates a users data
@@ -126,4 +126,26 @@ def logout_view():
     response_code, response_message = user_controller.logout_user_controller(token)
     response_obj = responses.get_response_object(response_code=response_code,
                                                  response_message=response_message)
+    return jsonify(response_obj)
+
+
+@app.route("/api/upload/<content_type>", methods=["POST"])
+@decorators.logging
+def upload_image_view():
+    """
+    This API uploads an image to firebase storage bucket
+    :param:
+    :return:
+    """
+    image = common_utils.get_posted_files().get(constants.IMAGE)
+
+    url, response_code, response_message = user_controller.upload_image_controller(_file=image)
+    response_obj = {}
+    if response_code != responses.CODE_SUCCESS:
+        response_obj = responses.get_response_object(response_code=response_code,
+                                                     response_message=response_message)
+    elif response_code == responses.CODE_SUCCESS:
+        response_obj = responses.get_response_object(response_code=response_code,
+                                                     response_data={"url": url},
+                                                     response_message=response_message)
     return jsonify(response_obj)

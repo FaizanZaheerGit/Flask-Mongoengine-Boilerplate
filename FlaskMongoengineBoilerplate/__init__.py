@@ -4,6 +4,7 @@
 from FlaskMongoengineBoilerplate.database.database_initialization import initialize_db
 from FlaskMongoengineBoilerplate.utils import constants
 from FlaskMongoengineBoilerplate.config import config
+from FlaskMongoengineBoilerplate.utils import firebase_utils
 
 # Framework imports
 from flask import Flask
@@ -32,6 +33,7 @@ app.logger = setup_logger(constants.LOG, constants.LOG_FILE, level=logging.ERROR
 
 CORS(app)
 app.config[constants.MONGO_DB_HOST] = config.MONGO_DB_URI
+firebase_app = firebase_utils.FirebaseUtils()
 initialize_db(app)
 
 

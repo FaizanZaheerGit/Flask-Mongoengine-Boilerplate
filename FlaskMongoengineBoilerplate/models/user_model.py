@@ -15,6 +15,7 @@ class User(db.Document):
     email_address = db.EmailField(required=True)
     password = db.StringField(required=True)
     password_salt = db.StringField(required=True)
+    image = db.StringField(default="")
     gender = db.DictField(required=True)
     date_of_birth = db.StringField(default="")
     status = db.DictField(default=static_data.user_status[0])
