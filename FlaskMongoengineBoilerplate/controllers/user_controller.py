@@ -241,18 +241,56 @@ def logout_user_controller(token):
     return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
 
 
-def upload_image_controller(_file):
+def upload_image_controller(_file, _type):
     """
     This function uploads a file to firebase storage bucket and returns url
     :param _file:
+    :param _type:
     :return string of url for firebase uploaded image:
     """
     if not _file:
         return None, responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS
 
-    file_name = str(uuid.uuid4()) + "_" + datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
+    if not _file:
+        return None, responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS
 
+    if _type is None:
+        _type = 0
+
+    if type(_type) == str and not file_type.isdigit():
+        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format("file type in url")
+
+    file_type = int(_type)
+    if file_type not in [0, 1, 2, 3, 4, 5]:
+        return None, responses.CODE_INVALID_CALL, "File type in URL incorrect: should be either 0, 1, 2, 3, 4 or 5"
+
+    file_name = str(uuid.uuid4()) + "_" + datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
     extension = _file.filename.split('.')[-1]
+
+    if file_type is not None:
+        if file_type == 1:
+            if extension.lower() not in constants.IMAGE_FORMATS:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.IMAGE_FORMATS)
+
+        elif file_type == 2:
+            if extension.lower() not in [constants.DOCX, constants.PDF]:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format([constants.DOCX, constants.PDF])
+
+        elif file_type == 3:
+            if extension.lower() not in constants.MP4:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.MP4)
+
+        elif file_type == 4:
+            if extension.lower() not in constants.MP3:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.MP3)
+
+        elif file_type == 5:
+            if extension.lower() not in constants.EXCEL_FORMATS:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.EXCEL_FORMATS)
+
+        elif file_type == 0:
+            if extension.lower() not in constants.FILE_FORMATS:
+                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.FILE_FORMATS)
 
     url = firebase_app.upload_file_using_string(source_file=_file.stream.read(), filename=file_name, extension=extension, content_type=_file.content_type)
 

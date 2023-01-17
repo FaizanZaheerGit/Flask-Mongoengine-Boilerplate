@@ -129,9 +129,9 @@ def logout_view():
     return jsonify(response_obj)
 
 
-@app.route("/api/upload/<content_type>", methods=["POST"])
+@app.route("/api/upload/<_type>", methods=["POST"])
 @decorators.logging
-def upload_image_view():
+def upload_image_view(_type):
     """
     This API uploads an image to firebase storage bucket
     :param:
@@ -139,7 +139,7 @@ def upload_image_view():
     """
     image = common_utils.get_posted_files().get(constants.IMAGE)
 
-    url, response_code, response_message = user_controller.upload_image_controller(_file=image)
+    url, response_code, response_message = user_controller.upload_image_controller(_file=image, _type=_type)
     response_obj = {}
     if response_code != responses.CODE_SUCCESS:
         response_obj = responses.get_response_object(response_code=response_code,
