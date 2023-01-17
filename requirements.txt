@@ -25,3 +25,4 @@ WTForms==2.3.3
 requests==2.28.1
 firebase-admin==5.0.2
 pyfcm==1.5.4
+cryptography==39.0.0
