@@ -19,7 +19,7 @@ class User(db.Document):
     image = db.StringField(default="")
     gender = db.DictField(required=True)
     date_of_birth = db.StringField(default="")
-    registration_channel = db.DictField(default=static_data.REGISTRATION_CHANNEL)
+    registration_channel = db.DictField(default=static_data.registration_channel)
     status = db.DictField(default=static_data.user_status[0])
     created_at = db.IntField(default=common_utils.get_current_time())
     updated_at = db.IntField(default=common_utils.get_current_time())
