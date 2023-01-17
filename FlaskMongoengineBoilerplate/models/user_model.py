@@ -11,6 +11,7 @@ from FlaskMongoengineBoilerplate.utils import common_utils
 
 class User(db.Document):
     uid = db.StringField(default=str(uuid.uuid4()), unqiue=True)
+    oauth_code = db.StringField(default="")
     name = db.StringField(required=True)
     email_address = db.EmailField(required=True)
     password = db.StringField(required=True)
@@ -18,6 +19,7 @@ class User(db.Document):
     image = db.StringField(default="")
     gender = db.DictField(required=True)
     date_of_birth = db.StringField(default="")
+    registration_channel = db.DictField(default=static_data.REGISTRATION_CHANNEL)
     status = db.DictField(default=static_data.user_status[0])
     created_at = db.IntField(default=common_utils.get_current_time())
     updated_at = db.IntField(default=common_utils.get_current_time())

@@ -149,3 +149,61 @@ def upload_image_view(_type):
                                                      response_data={"url": url},
                                                      response_message=response_message)
     return jsonify(response_obj)
+
+
+@app.route("/api/v1/user/signup/<_type>", methods=["POST"])
+@decorators.logging
+@decorators.validator([constants.OAUTH_CODE])
+def social_oauth_signup(data, _type):
+    """
+    This API will log in a user through social media accounts
+    :param data:
+    :param _type:
+    :return:
+    """
+    oauth_code = data[constants.OAUTH_CODE]
+    name = data.get(constants.NAME, None)
+    user, session_token, response_code, response_message = \
+        user_controller.social_signup_controller(oauth_code, _type, name)
+
+    if response_code != responses.CODE_SUCCESS:
+        response = responses.get_response_object(response_code=response_code,
+                                                      response_message=response_message)
+
+        return jsonify(response)
+
+    response = responses.get_response_object(response_code=response_code,
+                                             response_data={"user": user,
+                                                            "session-key": session_token},
+                                             response_message=response_message)
+    return jsonify(response)
+
+
+@app.route("/api/v1/patient/login/<_type>", methods=["POST"])
+@decorators.logging
+@decorators.validator([constants.OAUTH_CODE])
+def social_oauth_login(data, _type):
+    oauth_code = data[constants.OAUTH_CODE]
+
+    user, session_token, response_code, response_message = \
+        user_controller.social_login_controller(oauth_code=oauth_code, _type=_type)
+
+    if response_code == responses.CODE_USER_IS_INACTIVE:
+        response = responses.get_response_object(response_code=response_code,
+                                                 response_data={"user": user,
+                                                                "session-key": session_token},
+                                                 response_message=response_message)
+
+        return jsonify(response)
+
+    if response_code != responses.CODE_SUCCESS:
+        response = responses.get_response_object(response_code=response_code, 
+                                                 response_message=response_message)
+        return jsonify(response)
+
+    response = responses.get_response_object(response_code=response_code,
+                                             response_data={"user": user,
+                                                            "session-key": session_token},
+                                             response_message=response_message)
+
+    return jsonify(response)

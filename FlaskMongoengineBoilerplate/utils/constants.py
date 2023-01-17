@@ -5,6 +5,7 @@ STATUS = "status"
 NAME = "name"
 ID = "id"
 UID = "uid"
+EMAIL = "email"
 EMAIL_ADDRESS = "email_address"
 PASSWORD = "password"
 PASSWORD_SALT = "password_salt"
@@ -18,6 +19,8 @@ TOKEN = "token"
 EXPIRY_TIME = "expiry_time"
 IS_EXPIRED = "is_expired"
 IMAGE = "image"
+REGISTRATION_CHANNEL = "resgistration_channel"
+OAUTH_CODE = "oauth_code"
 
 # EXTENSION
 XLS = "xls"
@@ -56,3 +59,7 @@ IMAGE_CONTENT_TYPES = [MAPPERS_EXTENSION[PNG], MAPPERS_EXTENSION[JPG], MAPPERS_E
 DOCUMENT_CONTENT_TYPES = [MAPPERS_EXTENSION[XLS], MAPPERS_EXTENSION[XLSX], MAPPERS_EXTENSION[CSV],
                           MAPPERS_EXTENSION[PNG], MAPPERS_EXTENSION[JPG], MAPPERS_EXTENSION[JPEG],
                           MAPPERS_EXTENSION[MP4], MAPPERS_EXTENSION[MP3], MAPPERS_EXTENSION[DOCX]]
+
+GOOGLE = "google"
+FACEBOOK = "facebook"
+APPLE = "apple"

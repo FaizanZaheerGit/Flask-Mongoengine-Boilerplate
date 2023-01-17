@@ -1,15 +1,17 @@
 # Python imports
 import uuid
 from datetime import datetime
+import requests
+import jwt
 
 # Framework Imports
 
 # Local imports
 from FlaskMongoengineBoilerplate.database import database_layer
 from FlaskMongoengineBoilerplate.models import user_model, token_model
-from FlaskMongoengineBoilerplate.config import static_data
+from FlaskMongoengineBoilerplate.config import static_data, config
 from FlaskMongoengineBoilerplate.utils import responses, constants, user_utils, common_utils, token_utils
-from FlaskMongoengineBoilerplate import firebase_app
+from FlaskMongoengineBoilerplate import app, firebase_app
 
 
 def create_user_controller(data):
@@ -295,3 +297,325 @@ def upload_image_controller(_file, _type):
     url = firebase_app.upload_file_using_string(source_file=_file.stream.read(), filename=file_name, extension=extension, content_type=_file.content_type)
 
     return url, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+
+def social_signup_controller(oauth_code, _type, name=None):
+    """
+    This function will log in a user through social media accounts
+    :param oauth_code:
+    :param _type:
+    :param name:
+    :return:
+    """
+
+    if _type not in [constants.FACEBOOK, constants.GOOGLE, constants.APPLE]:
+        return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+    elif _type == constants.GOOGLE:
+        response = requests.post(
+            url=config.GOOGLE_CONFIG["web"]["token_uri"],
+            data={
+                "client_id": config.GOOGLE_CONFIG["web"]["client_id"],
+                "client_secret": config.GOOGLE_CONFIG["web"]["client_secret"],
+                "redirect_uri": (config.GOOGLE_CONFIG["web"]["redirect_uris"][0]),
+                "grant_type": "authorization_code",
+                "code": oauth_code
+            }
+        )
+
+        app.logger.error("GOOGLE TOKEN URI RESPONSE: ", str(response.json()))
+
+        if response.status_code != 200:
+            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        user_info = user_utils.get_user_info_by_media(response.json()["access_token"], constants.GOOGLE,
+                                                      config.GOOGLE_CONFIG["web"]["get_user_info_uri"])
+
+        app.logger.error("GOOGLE USER INFO RESPONSE: ", str(user_info))
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
+
+        if user:
+            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+
+        user_data = {
+            constants.NAME: user_info[constants.NAME],
+            constants.EMAIL_ADDRESS: user_info[constants.EMAIL],
+            constants.STATUS: static_data.user_status[0],
+            constants.OAUTH_CODE: user_info[constants.ID],
+            constants.IMAGE: user_info["picture"],
+            constants.REGISTRATION_CHANNEL: static_data.registration_channel[1],
+            constants.GENDER: static_data.gender[2]
+        }
+
+        new_user = database_layer.insert_record(collection=user_model.User, data=user_data)
+
+        token_utils.destroy_user_session_tokens(new_user)
+        token = token_utils.generate_session_token(user=new_user)
+
+        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+    elif _type == constants.FACEBOOK:
+        response = requests.get(
+            config.FACEBOOK_CONFIG["web"]["get_user_info_uri"],
+            params={
+                "fields": "id, email, name",
+                "access_token": oauth_code
+            }
+        )
+
+        app.logger.error("FACEBOOK RESPONSE: ", str(response.json()))
+
+        if response.status_code != 200:
+            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        user_info = response.json()
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
+        if user:
+            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+
+        if not user_info.get(constants.EMAIL):
+            uid = str(uuid.uuid4())
+            uid = uid[0:6]
+            user_info[constants.EMAIL] = "User-" + uid + "@mail.com"
+
+        user_data = {
+            constants.NAME: user_info[constants.NAME],
+            constants.EMAIL_ADDRESS: user_info[constants.EMAIL],
+            constants.STATUS: static_data.user_status[0],
+            constants.OAUTH_CODE: user_info[constants.ID],
+            constants.REGISTRATION_CHANNEL: static_data.registration_channel[2],
+            constants.GENDER: static_data.gender[2]
+        }
+        new_user = database_layer.insert_record(collection=user_model.User, data=user_data)
+
+        token_utils.destroy_user_session_tokens(new_user)
+        token = token_utils.generate_session_token(user=new_user)
+
+        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+    elif _type == constants.APPLE:
+
+        oauth_payload = {
+            'iss': config.APPLE_CONFIG["team_id"],
+            'iat': round(datetime.now().timestamp()),
+            'exp': round(datetime.now().timestamp()) + 15552000,
+            'aud': config.APPLE_CONFIG["client_secret_uri"],
+            'sub': config.APPLE_CONFIG["client_id"]
+        }
+
+        client_secret = jwt.encode(
+            oauth_payload,
+            config.APPLE_CONFIG["private_key"],
+            algorithm='ES256',
+            headers={"kid": config.APPLE_CONFIG["key_id"]}
+        ).decode("utf-8")
+
+        app.logger.error("GENERATED CLIENT SECRET: ", client_secret)
+
+        config.APPLE_CONFIG["client_secret"] = client_secret
+
+        response = requests.post(
+            url=config.APPLE_CONFIG["token_uri"],
+            data={
+                "client_id": config.APPLE_CONFIG["client_id"],
+                "client_secret": config.APPLE_CONFIG["client_secret"],
+                "redirect_uri": (config.APPLE_CONFIG["redirect_uris"][0]),
+                "grant_type": "authorization_code",
+                "code": oauth_code
+            },
+            headers={'content-type': "application/x-www-form-urlencoded"}
+        )
+
+        app.logger.error("APPLE TOKEN URI RESPONSE: " + str(response.json()))
+
+        if response.status_code != 200:
+            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        response = response.json()
+
+        id_token = response.get("id_token", None)
+        app.logger.error("ID TOKEN FOR APPLE SIGN: : ", id_token)
+
+        user_info = jwt.decode(id_token, '', verify=False)
+
+        app.logger.error("APPLE ID TOKEN USER INFO RESPONSE: " + str(user_info))
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
+        if user:
+            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+
+        if name is None:
+            name = user_info[constants.EMAIL][0:int(user_info[constants.EMAIL].find("@"))]
+
+        user_data = {
+            constants.NAME: name,
+            constants.EMAIL_ADDRESS: user_info[constants.EMAIL],
+            constants.STATUS: static_data.user_state[0],
+            constants.OAUTH_CODE: user_info["sub"],
+            constants.REGISTRATION_CHANNEL: static_data.registration_channel[3],
+            constants.GENDER: static_data.gender[2]
+        }
+        new_user = database_layer.insert_record(collection=user_model.User, data=user_data)
+
+        token_utils.destroy_user_session_tokens(new_user)
+        token = token_utils.generate_session_token(user=new_user)
+
+        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+
+def social_login_controller(oauth_code, _type):
+    """
+    This function will log in a user based on social media type and oauth code
+    :param oauth_code:
+    :param _type:
+    """
+
+    if _type not in [constants.FACEBOOK, constants.GOOGLE, constants.APPLE]:
+        return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+    elif _type == constants.GOOGLE:
+        response = requests.post(
+            url=config.GOOGLE_CONFIG["web"]["token_uri"],
+            data={
+                "client_id": config.GOOGLE_CONFIG["web"]["client_id"],
+                "client_secret": config.GOOGLE_CONFIG["web"]["client_secret"],
+                "redirect_uri": (config.GOOGLE_CONFIG["web"]["redirect_uris"][0]),
+                "grant_type": "authorization_code",
+                "code": oauth_code
+            }
+        )
+
+        app.logger.error("GOOGLE TOKEN URI RESPONSE: ", str(response.json()))
+
+        if response.status_code != 200:
+            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        user_info = user_utils.get_user_info_by_media(response.json()["access_token"], _type,
+                                                      config.GOOGLE_CONFIG["web"]["get_user_info_uri"])
+
+        app.logger.error("GOOGLE USER INFO URI: ", str(user_info))
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={
+                                                     constants.OAUTH_CODE: user_info[constants.ID],
+                                                     constants.REGISTRATION_CHANNEL: static_data.registration_channel[1]
+                                                 })
+
+        if not user:
+            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.GOOGLE)
+
+        if user[constants.STATUS][constants.ID] == 3:
+            return None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+
+        if user[constants.STATUS][constants.ID] != 1:
+            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+
+        token_utils.destroy_user_session_tokens(user)
+        token = token_utils.generate_session_token(user)
+
+        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+    elif _type == constants.FACEBOOK:
+        response = requests.get(
+            config.FACEBOOK_CONFIG["web"]["get_user_info_uri"],
+            params={
+                "fields": "id, email, name",
+                "access_token": oauth_code
+            }
+        )
+
+        if response.status_code != 200:
+            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        user_info = response.json()
+
+        app.logger.error("FACEBOOK RESPONSE: ", str(user_info))
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={
+                                                     constants.OAUTH_CODE: user_info[constants.ID],
+                                                     constants.REGISTRATION_CHANNEL: static_data.registration_channel[2]
+                                                 })
+
+        if not user:
+            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.FACEBOOK)
+
+        if user[constants.STATUS][constants.ID] == 3:
+            return None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+
+        if user[constants.STATUS][constants.ID] != 1:
+            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+
+        token_utils.destroy_user_session_tokens(user)
+        token = token_utils.generate_session_token(user)
+
+        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+    elif _type == constants.APPLE:
+        oauth_payload = {
+            'iss': config.APPLE_CONFIG["team_id"],
+            'iat': round(datetime.now().timestamp()),
+            'exp': round(datetime.now().timestamp()) + 15552000,
+            'aud': config.APPLE_CONFIG["client_secret_uri"],
+            'sub': config.APPLE_CONFIG["client_id"],
+        }
+
+        client_secret = jwt.encode(
+            oauth_payload,
+            config.APPLE_CONFIG["private_key"],
+            algorithm='ES256',
+            headers={"kid": config.APPLE_CONFIG["key_id"]}
+        ).decode("utf-8")
+
+        app.logger.error("GENERATED CLIENT SECRET: ", client_secret)
+
+        config.APPLE_CONFIG["client_secret"] = client_secret
+
+        response = requests.post(
+            url=config.APPLE_CONFIG["token_uri"],
+            data={
+                "client_id": config.APPLE_CONFIG["client_id"],
+                "client_secret": config.APPLE_CONFIG["client_secret"],
+                "redirect_uri": (config.APPLE_CONFIG["redirect_uris"][0]),
+                "grant_type": "authorization_code",
+                "code": oauth_code
+            },
+            headers={'content-type': "application/x-www-form-urlencoded"}
+        )
+        app.logger.error("APPLE TOKEN URI RESPONSE: " + str(response.json()))
+
+        if response.status_code != 200:
+            return None, None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+
+        response = response.json()
+
+        id_token = response.get("id_token", None)
+        app.logger.error("ID TOKEN FOR APPLE SIGN: : ", id_token)
+
+        user_info = jwt.decode(id_token, '', verify=False)
+
+        app.logger.error("APPLE ID TOKEN USER INFO RESPONSE: " + str(user_info))
+
+        user = database_layer.read_single_record(collection=user_model.User,
+                                                 read_filter={
+                                                     constants.OAUTH_CODE: user_info["sub"],
+                                                     constants.REGISTRATION_CHANNEL: static_data.registration_channel[3]
+                                                 })
+        if not user:
+            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.APPLE)
+
+        if user[constants.STATUS][constants.ID] == 3:
+            return None, None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+
+        if user[constants.STATUS][constants.ID] != 1:
+            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+
+        token_utils.destroy_user_session_tokens(user)
+        token = token_utils.generate_session_token(user)
+
+        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
