@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 import requests
 import jwt
+from threading import Thread
 
 # Framework Imports
 
@@ -241,6 +242,105 @@ def logout_user_controller(token):
     """
     token_utils.expire_token(token)
     return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+
+
+def forgot_password_email(email_address):
+    """
+    This function will take email address of a user as parameter
+    and will generate a token and then will send a verification URL containing id of user and the generated token
+    to the email address of a user (this token will be used in reset password API oin case of forgot password)
+    :param email_address:
+    :return:
+    """
+
+    if not common_utils.validate_email_address(email_address):
+        return responses.CODE_INVALID_EMAIL_ADDRESS, responses.MESSAGE_INVALID_EMAIL_ADDRESS
+
+    user = database_layer.read_single_record(user_model.User, {constants.EMAIL_ADDRESS: email_address})
+    if not user:
+        print(f">>>>>>>>>>>>>>>>>>>>>>>>> USER NOT FOUND {email_address}")
+        return responses.CODE_INVALID_EMAIL_ADDRESS, responses.MESSAGE_INVALID_EMAIL_ADDRESS
+
+    # BLOCKING FORGOT PASSWORD ON OAUTH SIGN UP
+    if user[constants.REGISTRATION_CHANNEL][constants.ID] != 1:
+        return responses.CODE_INVALID_CALL, "cannot reset password for user signed up with google, facebook or apple"
+
+    verification_url = token_utils.generate_forgot_password_verification_url(user)
+    thread = Thread(target=common_utils.send_mail(), args=("Reset Password Link", user[constants.EMAIL_ADDRESS],
+                    "Dear {}, to reset your password, click on the following link: \n{}".format(user.name, verification_url)))
+    thread.start()
+
+    return responses.CODE_SUCCESS, responses.MESSAGE_RESET_PASSWORD_EMAIL_SENT
+
+
+def change_password_by_token(user_id, token, password):
+    """
+    This function will take id of a user, password he wants to reset and the token which was in the verification URL
+    which was sent to the email address (with forgot password API) will reset the password of a user
+    using the token
+    :param user_id:
+    :param token:
+    :param password:
+    :return:
+    """
+    user = database_layer.read_single_record(collection=user_model.User,
+                                             read_filter={constants.UID: user_id})
+    if not user:
+        return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+
+    read_filter = {constants.USER: user, constants.TOKEN: token, 
+                   constants.PURPOSE: constants.FORGOT_PASSWORD, constants.IS_EXPIRED: False}
+
+    verification_token = database_layer.read_single_record(token_model.Token, read_filter)
+
+    if not verification_token:
+        return responses.CODE_INVALID_TOKEN, responses.MESSAGE_INVALID_TOKEN
+
+    token_utils.expire_token(verification_token)
+
+    if verification_token[constants.EXPIRY_TIME] < common_utils.get_current_time():
+        return responses.CODE_TOKEN_EXPIRED, responses.MESSAGE_TOKEN_EXPIRED
+
+    password, password_salt = common_utils.encrypt_password(password)
+    update_filter = {constants.PASSWORD: password, constants.PASSWORD_SALT: password_salt}
+
+    database_layer.update_single_record(user_model.User, {constants.UID: user_id}, update_filter)
+
+    return responses.CODE_SUCCESS, responses.MESSAGE_PASSWORD_CHANGED
+
+
+def change_password(user_id, old_password, new_password):
+    """
+    This function will take id and old password of a user and a new password which a user wants to set as parameters
+    and will match the old password of the user, and then will update the password
+    :param user_id:
+    :param old_password:
+    :param new_password:
+    :return:
+    """
+    user = database_layer.read_single_record(collection=user_model.User,
+                                             read_filter={constants.UID: user_id})
+    if not user:
+        return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+
+    if user != token_utils.get_current_user():
+        return responses.CODE_UNAUTHORIZED_ACCESS, responses.MESSAGE_UNAUTHORIZED_ACCESS
+
+    # BLOCKING CHANGE PASSWORD ON OAUTH SIGN UP
+    if user[constants.REGISTRATION_CHANNEL][constants.ID] != 1:
+        return responses.CODE_INVALID_CALL, "Cannot change password on social signup"
+
+    if not common_utils.compare_password(user[constants.PASSWORD], old_password):
+        return responses.CODE_INVALID_PASSWORD, responses.MESSAGE_PASSWORD_NOT_MATCH
+
+    if old_password == new_password:
+        return responses.CODE_INVALID_CALL, "Cannot change to already used password"
+
+    password, password_salt = common_utils.encrypt_password(new_password)
+    database_layer.modify_records(user_model.User, {constants.UID: user_id}, {constants.PASSWORD: password,
+                                                                              constants.PASSWORD_SALT: password_salt})
+
+    return responses.CODE_SUCCESS, responses.MESSAGE_PASSWORD_CHANGED
 
 
 def upload_image_controller(_file, _type):

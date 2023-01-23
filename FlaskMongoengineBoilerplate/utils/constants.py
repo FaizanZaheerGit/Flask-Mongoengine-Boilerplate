@@ -1,6 +1,9 @@
 LOG = "Logs"
 LOG_FILE = "FlaskMongoengineBoilerplate.log"
 MONGO_DB_HOST = "MONGODB_HOST"
+
+
+# USER CONSTANTS
 STATUS = "status"
 NAME = "name"
 ID = "id"
@@ -9,18 +12,27 @@ EMAIL = "email"
 EMAIL_ADDRESS = "email_address"
 PASSWORD = "password"
 PASSWORD_SALT = "password_salt"
+OLD_PASSWORD = "old_password"
+NEW_PASSWORD = "new_password"
 GENDER = "gender"
 DATE_OF_BIRTH = "date_of_birth"
 AGE = "age"
 CREATED_AT = "created_at"
 UPDATED_AT = "updated_at"
 USER = "user"
-TOKEN = "token"
-EXPIRY_TIME = "expiry_time"
-IS_EXPIRED = "is_expired"
 IMAGE = "image"
 REGISTRATION_CHANNEL = "resgistration_channel"
 OAUTH_CODE = "oauth_code"
+
+
+#TOKEN CONSTANTS
+TOKEN = "token"
+EXPIRY_TIME = "expiry_time"
+IS_EXPIRED = "is_expired"
+PURPOSE = "purpose"
+SESSION_MANAGEMENT = "session_management"
+FORGOT_PASSWORD = "forgot_password"
+
 
 # EXTENSION
 XLS = "xls"

@@ -5,6 +5,7 @@ email-validator==1.1.3
 Flask==2.0.1
 Flask-Cors==3.0.10
 flask-mongoengine==1.0.0
+Flask-Mail==0.9.1
 Flask-Scrypt==0.1.3.6
 Flask-WTF==0.15.1
 gunicorn==20.1.0

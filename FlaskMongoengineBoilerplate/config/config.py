@@ -9,9 +9,26 @@ if os.path.exists(find_dotenv()):
 else:
     print(".env file not found")
 
+
 MONGO_DB_URI = os.environ["MONGO_DB_URI"]
 APP_DEBUGGING = True if os.environ['APP_DEBUGGING'].lower() == "true" else False
 SESSION_EXPIRATION_TIME = 0  # SET EXPIRATION TIME IN HOURS => example 5/60 = 0.083, so 0.083 would be 5 minutes
+FRONTEND_DOMAIN = os.environ["FRONTEND_DOMAIN"] if os.getenv("FRONTEND_DOMAIN") else "http://127.0.0.1/"
+
+
+# MAIL SETTINGS
+EMAIL_USER = os.environ['EMAIL_USER']
+EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
+MAIL_SETTINGS = {
+    "MAIL_SERVER": 'smtp.sendgrid.net',
+    "MAIL_PORT": 465,
+    "MAIL_USE_TLS": False,
+    "MAIL_USE_SSL": True,
+    "MAIL_USERNAME": "apikey",
+    "MAIL_PASSWORD": EMAIL_PASSWORD,
+    "MAIL_DEFAULT_SENDER": EMAIL_USER
+}
+
 
 FIREBASE_CONFIG = {
     "type": os.environ['type'],

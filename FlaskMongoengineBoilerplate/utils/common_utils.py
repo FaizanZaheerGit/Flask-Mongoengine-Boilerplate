@@ -5,9 +5,11 @@ import re
 
 # Framework Imports
 from flask import request
-from flask_scrypt import generate_random_salt, generate_password_hash
+from flask_scrypt import generate_random_salt, generate_password_hash, check_password_hash
+from flask_mail import Message
 
 # Local Imports
+from FlaskMongoengineBoilerplate import app, mail
 
 
 def get_current_time(hours=0, days=0):
@@ -115,6 +117,35 @@ def encrypt_password(user_password):
 
     return convert_byte_to_string(generate_password_hash(user_password, password_salt)), \
         convert_byte_to_string(password_salt)
+
+
+def compare_password(password, user_password):
+    """
+    Checks if two passwords are the same or not
+    :param password:
+    :param user_password:
+    :return:
+    """
+    return check_password_hash(password, user_password)
+
+
+def send_mail(subject, recipients, body, html=None):
+    """
+    This function sends an e-mail to an email_address
+    :param subject:
+    :param recipients:
+    :param body:
+    :param html:
+    :return :
+    """
+    with app.app_context():
+        msg = Message(subject=subject,
+                      sender=("EW Villa Medica", config.EMAIL_USER),
+                      recipients=[recipients],
+                      body=body)
+        if html:
+            msg.html = html
+        mail.send(msg)
 
 
 def get_filtered_items(filter_list, data):

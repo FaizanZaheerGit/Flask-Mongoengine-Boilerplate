@@ -128,6 +128,76 @@ def logout_view():
                                                  response_message=response_message)
     return jsonify(response_obj)
 
+@app.route("/api/v1/user/forgot-password", methods=["POST"])
+@decorators.logging
+@decorators.validator([constants.EMAIL_ADDRESS])
+def forgot_password(data):
+    """
+    This API will take e-mail of a user as a parameter
+    and will send a verification URL containing the id and a token, to the email in case of a forgotten password
+    :param data:
+    :return:
+    """
+    response_code, response_message = user_controller.forgot_password_email(data[constants.EMAIL_ADDRESS])
+
+    if response_code != responses.CODE_SUCCESS:
+        response = responses.get_response_object(response_code=response_code,
+                                                 response_message=response_message)
+        return jsonify(response)
+
+    response = responses.get_response_object(response_code=response_code,
+                                             response_message=response_message)
+    return jsonify(response)
+
+
+@app.route("/api/v1/user/reset-password", methods=['PATCH'])
+@decorators.logging
+@decorators.validator([constants.ID, constants.TOKEN, constants.NEW_PASSWORD])
+def user_change_password_token(data):
+    """
+    This is change password in case of forgotten password,
+    and will update the password of a user using the token in the verification link
+    :param data:
+    :return:
+    """
+    response_code, response_message = \
+        user_controller.change_password_by_token(data[constants.ID], data[constants.TOKEN],
+                                                 data[constants.NEW_PASSWORD])
+
+    if response_code != responses.CODE_SUCCESS:
+        print(">>>>>>>>>>>>>>>>>>>>>>>> Password not changed by token.. >>>>>>>>>>>>>>>>>>>>>>")
+        response = responses.get_response_object(response_code=response_code,
+                                                 response_message=response_message)
+        return jsonify(response)
+
+    response = responses.get_response_object(response_code=response_code,
+                                             response_message=response_message)
+    return jsonify(response)
+
+
+@app.route("/api/v1/user/change-password", methods=["PATCH"])
+@decorators.logging
+@decorators.is_authenticated
+@decorators.validator([constants.ID, constants.OLD_PASSWORD, constants.NEW_PASSWORD])
+def change_password_view(data):
+    """
+    This API will take id of a user, and will update the password of a user and set it to the new password
+    :param data:
+    :return:
+    """
+    response_code, response_message = \
+        user_controller.change_password_controller(data[constants.ID], data[constants.OLD_PASSWORD],
+                                        data[constants.NEW_PASSWORD])
+
+    if response_code != responses.CODE_SUCCESS:
+        response = responses.get_response_object(response_code=response_code,
+                                                 response_message=response_message)
+        return jsonify(response)
+
+    response = responses.get_response_object(response_code=response_code,
+                                             response_message=response_message)
+    return jsonify(response)
+
 
 @app.route("/api/upload/<_type>", methods=["POST"])
 @decorators.logging
@@ -179,7 +249,7 @@ def social_oauth_signup(data, _type):
     return jsonify(response)
 
 
-@app.route("/api/v1/patient/login/<_type>", methods=["POST"])
+@app.route("/api/v1/user/login/<_type>", methods=["POST"])
 @decorators.logging
 @decorators.validator([constants.OAUTH_CODE])
 def social_oauth_login(data, _type):

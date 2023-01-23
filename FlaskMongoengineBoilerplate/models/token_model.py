@@ -13,6 +13,7 @@ class Token(db.Document):
     uid = db.StringField(default=str(uuid.uuid4()), unique=True)
     user = db.ReferenceField(User, required=True)
     token = db.StringField(required=True)
+    purpose = db.StringField(required=True)
     expiry_time = db.IntField(required=True)
     is_expired = db.BooleanField(default=False)
     created_at = db.IntField(default=common_utils.get_current_time())
