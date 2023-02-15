@@ -9,6 +9,7 @@ from flask_scrypt import generate_random_salt, generate_password_hash, check_pas
 from flask_mail import Message
 
 # Local Imports
+from FlaskMongoengineBoilerplate.config import config
 from FlaskMongoengineBoilerplate import app, mail
 
 

@@ -304,12 +304,12 @@ def change_password_by_token(user_id, token, password):
     password, password_salt = common_utils.encrypt_password(password)
     update_filter = {constants.PASSWORD: password, constants.PASSWORD_SALT: password_salt}
 
-    database_layer.update_single_record(user_model.User, {constants.UID: user_id}, update_filter)
+    database_layer.modify_records(user_model.User, {constants.UID: user_id}, update_filter)
 
     return responses.CODE_SUCCESS, responses.MESSAGE_PASSWORD_CHANGED
 
 
-def change_password(user_id, old_password, new_password):
+def change_password_controller(user_id, old_password, new_password):
     """
     This function will take id and old password of a user and a new password which a user wants to set as parameters
     and will match the old password of the user, and then will update the password
@@ -334,7 +334,7 @@ def change_password(user_id, old_password, new_password):
         return responses.CODE_INVALID_PASSWORD, responses.MESSAGE_PASSWORD_NOT_MATCH
 
     if old_password == new_password:
-        return responses.CODE_INVALID_CALL, "Cannot change to already used password"
+        return responses.CODE_INVALID_CALL, "Error: You are using a previously used password"
 
     password, password_salt = common_utils.encrypt_password(new_password)
     database_layer.modify_records(user_model.User, {constants.UID: user_id}, {constants.PASSWORD: password,

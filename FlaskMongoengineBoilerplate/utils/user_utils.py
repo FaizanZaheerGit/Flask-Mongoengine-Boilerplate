@@ -47,13 +47,10 @@ def filter_user_object(users):
     :param users:
     :return get user object of multiple users:
     """
-    if isinstance(users, BaseQuerySet) or isinstance(users, list):
-        user_data = []
-        for user in users:
-            user_data.append(get_user_object(user))
-        return user_data
-
-    return [get_user_object(users)]
+    user_data = []
+    for user in users:
+        user_data.append(get_user_object(user))
+    return user_data
 
 
 def get_user_info_by_media(token, media_platform, user_info_uri):
