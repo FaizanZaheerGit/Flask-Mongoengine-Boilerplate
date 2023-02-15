@@ -1,7 +1,7 @@
 # Python imports
 
 # Framework imports
-from flask import jsonify, request
+from flask import jsonify, request, Blueprint
 
 # Local imports
 from FlaskMongoengineBoilerplate import app
@@ -9,7 +9,10 @@ from FlaskMongoengineBoilerplate.controllers import user_controller
 from FlaskMongoengineBoilerplate.utils import responses, decorators, constants, common_utils
 
 
-@app.route("/api/user/create", methods=["POST"])
+user_bp = Blueprint('user_bp', __name__)
+
+
+user_bp.route('/create', methods=["POST"])
 @decorators.logging
 @decorators.validator(required_fields=[constants.NAME, constants.EMAIL_ADDRESS, constants.PASSWORD, constants.GENDER],
                       optional_fields=[constants.DATE_OF_BIRTH, constants.IMAGE])
@@ -31,7 +34,7 @@ def create_user_view(data):
     return jsonify(response_obj)
 
 
-@app.route("/api/user/read", methods=["GET"])
+@user_bp.route('/read', methods=["GET"])
 @decorators.logging
 def read_user_view():
     """
@@ -53,7 +56,7 @@ def read_user_view():
     return jsonify(response_obj)
 
 
-@app.route("/api/user/update", methods=["PUT"])
+@user_bp.route('/update', methods=["PUT"])
 @decorators.logging
 @decorators.is_authenticated
 @decorators.validator(required_fields=[constants.UID],
@@ -76,7 +79,7 @@ def update_user_view(data):
     return jsonify(response_obj)
 
 
-@app.route("/api/user/delete/<uid>", methods=["DELETE"])
+@user_bp.route('/delete/<uid>', methods=["DELETE"])
 @decorators.logging
 @decorators.is_authenticated
 def delete_user_view(uid):
@@ -91,7 +94,7 @@ def delete_user_view(uid):
     return jsonify(response_obj)
 
 
-@app.route("/api/user/login", methods=["POST"])
+@user_bp.route('/login', methods=["POST"])
 @decorators.logging
 @decorators.validator(required_fields=[constants.EMAIL_ADDRESS, constants.PASSWORD], optional_fields=[])
 def login_view(data):
@@ -113,7 +116,7 @@ def login_view(data):
     return jsonify(response_obj)
 
 
-@app.route("/api/user/logout", methods=["POST"])
+@user_bp.route('/logout', methods=["POST"])
 @decorators.logging
 @decorators.is_authenticated
 def logout_view():
@@ -128,7 +131,8 @@ def logout_view():
                                                  response_message=response_message)
     return jsonify(response_obj)
 
-@app.route("/api/v1/user/forgot-password", methods=["POST"])
+
+@user_bp.route('/forgot-password', methods=["PATCH"])
 @decorators.logging
 @decorators.validator([constants.EMAIL_ADDRESS])
 def forgot_password(data):
@@ -150,7 +154,7 @@ def forgot_password(data):
     return jsonify(response)
 
 
-@app.route("/api/v1/user/reset-password", methods=['PATCH'])
+@user_bp.route("/reset-password", methods=['PATCH'])
 @decorators.logging
 @decorators.validator([constants.ID, constants.TOKEN, constants.NEW_PASSWORD])
 def user_change_password_token(data):
@@ -175,7 +179,7 @@ def user_change_password_token(data):
     return jsonify(response)
 
 
-@app.route("/api/v1/user/change-password", methods=["PATCH"])
+@user_bp.route("/change-password", methods=["PATCH"])
 @decorators.logging
 @decorators.is_authenticated
 @decorators.validator([constants.ID, constants.OLD_PASSWORD, constants.NEW_PASSWORD])
@@ -199,7 +203,7 @@ def change_password_view(data):
     return jsonify(response)
 
 
-@app.route("/api/upload/<_type>", methods=["POST"])
+@user_bp.route("/upload/<_type>", methods=["POST"])
 @decorators.logging
 def upload_image_view(_type):
     """
@@ -221,7 +225,7 @@ def upload_image_view(_type):
     return jsonify(response_obj)
 
 
-@app.route("/api/v1/user/signup/<_type>", methods=["POST"])
+@user_bp.route("/social/signup/<_type>", methods=["POST"])
 @decorators.logging
 @decorators.validator([constants.OAUTH_CODE])
 def social_oauth_signup(data, _type):
@@ -249,7 +253,7 @@ def social_oauth_signup(data, _type):
     return jsonify(response)
 
 
-@app.route("/api/v1/user/login/<_type>", methods=["POST"])
+@user_bp.route("/social/login/<_type>", methods=["POST"])
 @decorators.logging
 @decorators.validator([constants.OAUTH_CODE])
 def social_oauth_login(data, _type):

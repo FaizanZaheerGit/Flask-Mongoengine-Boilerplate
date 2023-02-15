@@ -1,7 +1,7 @@
 # Python imports
 
 # Framework imports
-from flask import jsonify
+from flask import jsonify, Blueprint
 
 # Local imports
 from FlaskMongoengineBoilerplate import app
@@ -9,13 +9,16 @@ from FlaskMongoengineBoilerplate.config import static_data
 from FlaskMongoengineBoilerplate.utils import responses, decorators
 
 
-@app.route("/", methods=["GET"])
+common_bp = Blueprint('common_bp', __name__)
+
+
+@common_bp.route("/", methods=["GET"])
 @decorators.logging
 def server_check():
     return "Server is up and running."
 
 
-@app.route("/api/static-data", methods=["GET"])
+@common_bp.route("/api/static-data", methods=["GET"])
 @decorators.logging
 def get_static_data_view():
     """

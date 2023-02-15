@@ -45,3 +45,6 @@ mail = Mail(app)
 # IMPORTING VIEWS, FOR INITIALIZATION
 from FlaskMongoengineBoilerplate.views import user_views
 from FlaskMongoengineBoilerplate.views import common_views
+
+app.register_blueprint(user_views.user_bp, url_prefix='/api/user')
+app.register_blueprint(common_views.common_bp, url_prefix='/')

@@ -141,7 +141,7 @@ def send_mail(subject, recipients, body, html=None):
     """
     with app.app_context():
         msg = Message(subject=subject,
-                      sender=("EW Villa Medica", config.EMAIL_USER),
+                      sender=("TEST EMAIL USER", config.EMAIL_USER),
                       recipients=[recipients],
                       body=body)
         if html:
