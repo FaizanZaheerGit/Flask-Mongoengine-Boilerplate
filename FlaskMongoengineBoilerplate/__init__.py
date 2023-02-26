@@ -10,6 +10,7 @@ from FlaskMongoengineBoilerplate.utils import firebase_utils
 # Framework imports
 from flask import Flask
 from flask_cors import CORS
+from flask_bcrypt import Bcrypt
 from flask_mail import Mail
 
 
@@ -34,6 +35,7 @@ def setup_logger(name, log_file, level=logging.INFO):
 app.logger = setup_logger(constants.LOG, constants.LOG_FILE, level=logging.ERROR)
 
 CORS(app)
+bcrypt = Bcrypt(app)
 app.config[constants.MONGO_DB_HOST] = config.MONGO_DB_URI
 firebase_app = firebase_utils.FirebaseUtils()
 initialize_db(app)

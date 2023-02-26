@@ -21,7 +21,7 @@ CREATED_AT = "created_at"
 UPDATED_AT = "updated_at"
 USER = "user"
 IMAGE = "image"
-REGISTRATION_CHANNEL = "resgistration_channel"
+REGISTRATION_CHANNEL = "registration_channel"
 OAUTH_CODE = "oauth_code"
 
 

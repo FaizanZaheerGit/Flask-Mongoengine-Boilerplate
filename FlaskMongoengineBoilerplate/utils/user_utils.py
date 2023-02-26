@@ -35,7 +35,8 @@ def get_user_object(user):
         constants.DATE_OF_BIRTH: user[constants.DATE_OF_BIRTH],
         constants.AGE: user_age_calculator(user[constants.DATE_OF_BIRTH]) if user[constants.DATE_OF_BIRTH] else "",
         constants.OAUTH_CODE: user[constants.OAUTH_CODE],
-        constants.REGISTRATION_CHANNEL: user[constants.REGISTRATION_CHANNEL]
+        constants.REGISTRATION_CHANNEL: user[constants.REGISTRATION_CHANNEL],
+        constants.IMAGE: user[constants.IMAGE]
     }
     return user_data
 

@@ -12,7 +12,7 @@ from FlaskMongoengineBoilerplate.utils import responses, decorators, constants, 
 user_bp = Blueprint('user_bp', __name__)
 
 
-user_bp.route('/create', methods=["POST"])
+@user_bp.route('/create', methods=["POST"])
 @decorators.logging
 @decorators.validator(required_fields=[constants.NAME, constants.EMAIL_ADDRESS, constants.PASSWORD, constants.GENDER],
                       optional_fields=[constants.DATE_OF_BIRTH, constants.IMAGE])

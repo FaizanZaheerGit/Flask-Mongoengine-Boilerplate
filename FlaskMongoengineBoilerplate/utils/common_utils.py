@@ -5,12 +5,11 @@ import re
 
 # Framework Imports
 from flask import request
-from flask_scrypt import generate_random_salt, generate_password_hash, check_password_hash
 from flask_mail import Message
 
 # Local Imports
 from FlaskMongoengineBoilerplate.config import config
-from FlaskMongoengineBoilerplate import app, mail
+from FlaskMongoengineBoilerplate import app, mail, bcrypt
 
 
 def get_current_time(hours=0, days=0):
@@ -94,40 +93,23 @@ def convert_byte_to_string(byte_str):
     return byte_str.decode("utf-8")
 
 
-def match_password(password, password_salt, user_password):
-    """
-    checks whether the user password is same as given password
-    :param password:
-    :param password_salt:
-    :param user_password:
-    :return:
-    """
-    return convert_string_to_bytes(password) == \
-        generate_password_hash(
-            user_password, convert_string_to_bytes(password_salt))
-
-
 def encrypt_password(user_password):
     """
-    This function encrypts the password entered by user using random generated salt and returns the encrypted password
-    hash and salt
+    This function encrypts the password entered by user returns the encrypted password hash
     :param user_password:
     :return:
     """
-    password_salt = generate_random_salt()
-
-    return convert_byte_to_string(generate_password_hash(user_password, password_salt)), \
-        convert_byte_to_string(password_salt)
+    return bcrypt.generate_password_hash(user_password).decode('utf-8')
 
 
-def compare_password(password, user_password):
+def compare_password(password_hash, user_password):
     """
     Checks if two passwords are the same or not
-    :param password:
+    :param password_hash:
     :param user_password:
     :return:
     """
-    return check_password_hash(password, user_password)
+    return bcrypt.check_password_hash(password_hash, user_password)
 
 
 def send_mail(subject, recipients, body, html=None):

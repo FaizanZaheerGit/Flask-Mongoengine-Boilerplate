@@ -61,7 +61,7 @@ def create_user_controller(data):
         return None, responses.CODE_ALREADY_EXISTS, \
             responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
 
-    data[constants.PASSWORD], data[constants.PASSWORD_SALT] = common_utils.encrypt_password(
+    data[constants.PASSWORD] = common_utils.encrypt_password(
         user_password=data[constants.PASSWORD])
 
     new_user = database_layer.insert_record(collection=user_model.User, data=data)
@@ -154,7 +154,7 @@ def update_user_controller(data):
     user_update_data = data
     uid = data[constants.UID]
     user_update_data.pop(constants.UID)
-    user_updatable_fields = [constants.NAME, constants.STATUS, constants.GENDER, constants.DATE_OF_BIRTH]
+    user_updatable_fields = [constants.NAME, constants.STATUS, constants.GENDER, constants.DATE_OF_BIRTH, constants.IMAGE]
     filtered_user_update_data = common_utils.get_filtered_items(filter_list=user_updatable_fields,
                                                                 data=user_update_data)
 
@@ -222,9 +222,8 @@ def login_user_controller(data):
         return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, \
                responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD
 
-    if not common_utils.match_password(password=user[constants.PASSWORD],
-                                       password_salt=user[constants.PASSWORD_SALT],
-                                       user_password=data[constants.PASSWORD]):
+    if not common_utils.compare_password(password_hash=user[constants.PASSWORD],
+                                         user_password=data[constants.PASSWORD]):
         return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, \
             responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD
 
@@ -301,8 +300,8 @@ def change_password_by_token(user_id, token, password):
     if verification_token[constants.EXPIRY_TIME] < common_utils.get_current_time():
         return responses.CODE_TOKEN_EXPIRED, responses.MESSAGE_TOKEN_EXPIRED
 
-    password, password_salt = common_utils.encrypt_password(password)
-    update_filter = {constants.PASSWORD: password, constants.PASSWORD_SALT: password_salt}
+    password = common_utils.encrypt_password(password)
+    update_filter = {constants.PASSWORD: password}
 
     database_layer.modify_records(user_model.User, {constants.UID: user_id}, update_filter)
 
@@ -359,14 +358,14 @@ def upload_image_controller(_file, _type):
     if _type is None:
         _type = 0
 
-    if type(_type) == str and not file_type.isdigit():
+    if type(_type) == str and not _type.isdigit():
         return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format("file type in url")
 
     file_type = int(_type)
     if file_type not in [0, 1, 2, 3, 4, 5]:
         return None, responses.CODE_INVALID_CALL, "File type in URL incorrect: should be either 0, 1, 2, 3, 4 or 5"
 
-    file_name = str(uuid.uuid4()) + "_" + datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
+    file_name = str(uuid.uuid4()) + "_" + datetime.now().strftime("%Y_%m_%d-%H_%M")
     extension = _file.filename.split('.')[-1]
 
     if file_type is not None:

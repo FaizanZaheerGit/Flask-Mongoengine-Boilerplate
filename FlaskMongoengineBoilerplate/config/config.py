@@ -20,13 +20,13 @@ FRONTEND_DOMAIN = os.environ["FRONTEND_DOMAIN"] if os.getenv("FRONTEND_DOMAIN") 
 EMAIL_USER = os.environ['EMAIL_USER']
 EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
 MAIL_SETTINGS = {
-    "MAIL_SERVER": 'smtp.sendgrid.net',
+    "MAIL_SERVER": 'smtp.gmail.com', # Replace with smtp.sendgrid.net (For Usign Send Grid)
     "MAIL_PORT": 465,
     "MAIL_USE_TLS": False,
     "MAIL_USE_SSL": True,
-    "MAIL_USERNAME": "apikey",
-    "MAIL_PASSWORD": EMAIL_PASSWORD,
-    "MAIL_DEFAULT_SENDER": EMAIL_USER
+    "MAIL_USERNAME": EMAIL_USER, # Replace with "apikey", and send MAIL_DEFAULT_SENDER key with value EMAIL_USER (For Send Grid)
+    "MAIL_PASSWORD": EMAIL_PASSWORD
+    # "MAIL_DEFAULT_SENDER": EMAIL_USER
 }
 
 
@@ -55,8 +55,7 @@ GOOGLE_CONFIG = {
         "client_secret": "",
         "get_user_info_uri": "https://www.googleapis.com/oauth2/v2/userinfo",
         "redirect_uris": [
-          "http://localhost:3000/auth-number-verification",
-          "http://localhost:3000/auth-signup-verification"
+          "http://localhost:3000/login/google/callback",
         ],
         "javascript_origins": [
           "http://127.0.0.1:5000"

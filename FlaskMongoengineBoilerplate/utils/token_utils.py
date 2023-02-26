@@ -19,7 +19,6 @@ def generate_session_token(user):
     :return token:
     """
     token_jwt = jwt.encode(payload={"user": user_utils.get_user_object(user=user)}, key="secret", algorithm="HS256")
-    token_jwt = common_utils.convert_byte_to_string(token_jwt)
     token = str(token_jwt) + "-" + str(uuid.uuid4())
 
     insert_filter = {constants.USER: user, constants.TOKEN: token, constants.PURPOSE: constants.SESSION_MANAGEMENT,
