@@ -1,6 +1,8 @@
 LOG = "Logs"
 LOG_FILE = "FlaskMongoengineBoilerplate.log"
 MONGO_DB_HOST = "MONGODB_HOST"
+PAGE = "page"
+LIMIT = "limit"
 
 
 # USER CONSTANTS

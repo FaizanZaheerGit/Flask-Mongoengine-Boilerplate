@@ -75,8 +75,24 @@ def read_user_controller(data):
     :param data:
     :return:
     """
-    user_filter_items = [constants.NAME, constants.EMAIL_ADDRESS, constants.GENDER, constants.STATUS]
+    page_options = {}
+    user_filter_items = [constants.NAME, constants.EMAIL_ADDRESS, constants.GENDER, constants.STATUS, 
+                         constants.PAGE, constants.LIMIT]
     user_filter_dict = common_utils.get_filtered_items(filter_list=user_filter_items, data=data)
+
+    if (user_filter_dict.get(constants.PAGE) and not user_filter_dict.get(constants.LIMIT)) or (user_filter_dict.get(constants.LIMIT) and not user_filter_dict.get(constants.PAGE)):
+        return None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_PAGE_LIMIT
+    
+    if user_filter_dict.get(constants.PAGE) and user_filter_dict.get(constants.LIMIT):
+        try:
+            user_filter_dict[constants.PAGE] = int(user_filter_dict[constants.PAGE])
+            user_filter_dict[constants.LIMIT] = int(user_filter_dict[constants.LIMIT])
+            page_options[constants.PAGE] = user_filter_dict[constants.PAGE]
+            page_options[constants.LIMIT] = user_filter_dict[constants.LIMIT]
+            user_filter_dict.pop(constants.PAGE)
+            user_filter_dict.pop(constants.LIMIT)
+        except ValueError:
+            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format("page or limit")
 
     if user_filter_dict.get(constants.GENDER):
         if user_filter_dict[constants.GENDER].lower() == "male":
@@ -104,7 +120,7 @@ def read_user_controller(data):
         else:
             user_filter_dict[constants.STATUS] = {}
 
-    user_objects = database_layer.read_record(collection=user_model.User, read_filter=user_filter_dict)
+    user_objects = database_layer.read_record(collection=user_model.User, read_filter=user_filter_dict, page_options=page_options)
     users = user_utils.filter_user_object(users=user_objects)
 
     return users, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS

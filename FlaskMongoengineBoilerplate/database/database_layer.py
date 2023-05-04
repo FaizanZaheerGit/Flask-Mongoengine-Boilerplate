@@ -20,18 +20,25 @@ def read_single_record(collection, read_filter):
     return collection.objects(**read_filter).order_by("-"+constants.CREATED_AT).first()
 
 
-def read_record(collection, read_filter):
+def read_record(collection, read_filter, page_options={}):
     """
     read and return multiple records based on the read filter
     :param collection:
     :param read_filter:
+    :param page_options:
     :return:
     """
     if type(read_filter) == mongoengine.queryset.visitor.Q or \
             type(read_filter) == mongoengine.queryset.visitor.QCombination:
-        return collection.objects(read_filter).order_by("-"+constants.CREATED_AT)
+        if len(page_options) != 0:
+            return collection.objects(read_filter).skip((page_options[constants.PAGE] - 1) * page_options[constants.LIMIT]).limit(page_options[constants.LIMIT]).order_by("-" + constants.CREATED_AT)
+        else:
+            return collection.objects(read_filter).order_by("-"+constants.CREATED_AT)
 
-    return collection.objects(**read_filter).order_by("-"+constants.CREATED_AT)
+    if len(page_options) != 0:
+        return collection.objects(**read_filter).skip((page_options[constants.PAGE] - 1) * page_options[constants.LIMIT]).limit(page_options[constants.LIMIT]).order_by("-" + constants.CREATED_AT)
+    else:
+        return collection.objects(**read_filter).order_by("-"+constants.CREATED_AT)
 
 
 def modify_records(collection, read_filter, update_filter):
