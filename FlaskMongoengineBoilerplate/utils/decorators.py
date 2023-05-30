@@ -21,8 +21,9 @@ def validator(required_fields=[], optional_fields=[]):
             data = common_utils.get_posted_data()
             validated_data = {}
             if type(data) != dict:
-                response_obj = responses.get_response_object(response_code=responses.CODE_MISSING_PARAMETERS,
-                                                             response_message="Data sent is not a valid JSON object!")
+                response_obj = responses.get_response_object(statusCode=responses.CODE_MISSING_PARAMETERS,
+                                                             data=None,
+                                                             message="Data sent is not a valid JSON object!")
                 app.logger.error(f" {request.method} {request.url} \nHeaders: {dict(request.headers)} \n"
                                  f"Body: {data}", exc_info=1)
                 return jsonify(response_obj)
@@ -31,8 +32,9 @@ def validator(required_fields=[], optional_fields=[]):
             missing_list = []
             for key in data.keys():
                 if key not in combined_list:
-                    response_obj = responses.get_response_object(response_code=responses.CODE_EXTRA_PARAMETERS,
-                                                                 response_message=responses.MESSAGE_EXTRA_PARAMETERS
+                    response_obj = responses.get_response_object(statusCode=responses.CODE_EXTRA_PARAMETERS,
+                                                                 data=None,
+                                                                 message=responses.MESSAGE_EXTRA_PARAMETERS
                                                                  + ": " + key)
                     app.logger.error(f" {request.method} {request.url} \nHeaders: {dict(request.headers)} \n"
                                      f"Body: {data}", exc_info=1)
@@ -53,8 +55,9 @@ def validator(required_fields=[], optional_fields=[]):
 
             data = validated_data
             if missing_list:
-                response_obj = responses.get_response_object(response_code=responses.CODE_MISSING_PARAMETERS,
-                                                             response_message=responses.MESSAGE_MISSING_PARAMETERS
+                response_obj = responses.get_response_object(statusCode=responses.CODE_MISSING_PARAMETERS,
+                                                             data=None,
+                                                             message=responses.MESSAGE_MISSING_PARAMETERS
                                                              + ": " + str(missing_list))
                 app.logger.error(f" {request.method} {request.url} \nHeaders: {dict(request.headers)} \n"
                                  f"Body: {common_utils.get_posted_data()}", exc_info=1)
@@ -73,15 +76,17 @@ def is_authenticated(view_function):
 
         user = token_utils.check_current_user()
         if not user:
-            response = responses.get_response_object(response_code=responses.CODE_UNAUTHORIZED_ACCESS,
-                                                     response_message=responses.MESSAGE_AUTHENTICATION_FAILED)
+            response = responses.get_response_object(statusCode=responses.CODE_UNAUTHORIZED_ACCESS,
+                                                     data=None,
+                                                     message=responses.MESSAGE_AUTHENTICATION_FAILED)
             return jsonify(response)
 
         if user[constants.STATUS][constants.ID] != 1:
             # DESTROY USER SESSION TOKEN
             token_utils.destroy_user_session_tokens(user)
-            response = responses.get_response_object(response_code=responses.CODE_USER_IS_INACTIVE,
-                                                     response_message=responses.MESSAGE_USER_IS_INACTIVE)
+            response = responses.get_response_object(statusCode=responses.CODE_USER_IS_INACTIVE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_USER_IS_INACTIVE)
             return jsonify(response)
 
         return view_function(*args, **kwargs)
@@ -102,8 +107,9 @@ def logging(view_function):
             app.logger.error(f" {request.method} {request.url} \nHeaders: {dict(request.headers)} \n"
                              f"Body: {common_utils.get_posted_data()}", exc_info=1)
 
-            response = responses.get_response_object(response_code=responses.CODE_GENERAL_ERROR,
-                                                     response_message=responses.MESSAGE_GENERAL_ERROR)
+            response = responses.get_response_object(statusCode=responses.CODE_GENERAL_ERROR,
+                                                     data=None,
+                                                     message=responses.MESSAGE_GENERAL_ERROR)
             return jsonify(response)
 
     return wrapper
@@ -113,8 +119,9 @@ def blocked(view_function):
     @wraps(view_function)
     def wrapper(*args, **kwargs):
         print("Args: ", args, "\nKwargs: ", kwargs)
-        response = responses.get_response_object(response_code=responses.CODE_DEPRECATED_API,
-                                                 response_message=responses.MESSAGE_DEPRECATED_API)
+        response = responses.get_response_object(statusCode=responses.CODE_DEPRECATED_API,
+                                                 data=None,
+                                                 message=responses.MESSAGE_DEPRECATED_API)
         return jsonify(response)
 
     return wrapper

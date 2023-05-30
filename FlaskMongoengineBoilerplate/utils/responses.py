@@ -5,7 +5,7 @@
 # Local imports
 
 
-def get_response_object(response_code, response_data=None, response_message=None):
+def get_response_object(statusCode, data=None, message=None):
     """
     This function returns response in form of dict
     :param response_code:
@@ -13,13 +13,13 @@ def get_response_object(response_code, response_data=None, response_message=None
     :param response_message:
     :return response_object:
     """
-    response_object = {"response_code": response_code}
+    response_object = {"statusCode": statusCode}
 
-    if response_data:
-        response_object.update({"response_data": response_data})
+    if data:
+        response_object.update({"data": data})
 
-    if response_message:
-        response_object.update({"response_message": response_message})
+    if message:
+        response_object.update({"message": message})
 
     return response_object
 

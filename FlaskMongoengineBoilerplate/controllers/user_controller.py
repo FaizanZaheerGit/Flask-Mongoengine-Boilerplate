@@ -6,6 +6,7 @@ import jwt
 from threading import Thread
 
 # Framework Imports
+from flask import jsonify
 
 # Local imports
 from FlaskMongoengineBoilerplate.database import database_layer
@@ -23,50 +24,67 @@ def create_user_controller(data):
     """
     # TODO Validate input static dictionaries (like gender etc. )
     if type(data[constants.NAME]) != str:
-        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.NAME)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.NAME)))
+        # return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.NAME)
 
     if type(data[constants.PASSWORD]) != str:
-        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.PASSWORD)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.PASSWORD)))
 
     if type(data[constants.GENDER]) != dict:
-        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.GENDER)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.GENDER)))
 
     if data.get(constants.DATE_OF_BIRTH):
         if type(data[constants.DATE_OF_BIRTH]) != str:
-            return None, responses.CODE_INVALID_DATA_TYPE, \
-                responses.MESSAGE_INVALID_DATA_TYPE.format(constants.DATE_OF_BIRTH)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None, 
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.DATE_OF_BIRTH)))
 
         valid_date = common_utils.validate_date_format(date=data[constants.DATE_OF_BIRTH])
         if not valid_date:
-            return None, responses.CODE_INVALID_VALUE, \
-                responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_VALUE,
+                                                         data=None, 
+                                                         message=responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"))
 
     if data.get(constants.IMAGE):
         if type(data[constants.IMAGE]) != str:
-            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None, 
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)))
 
     if type(data[constants.EMAIL_ADDRESS]) != str:
-        return None, responses.CODE_INVALID_DATA_TYPE, \
-            responses.MESSAGE_INVALID_DATA_TYPE.format(constants.EMAIL_ADDRESS)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.EMAIL_ADDRESS)))
 
     data[constants.EMAIL_ADDRESS] = data[constants.EMAIL_ADDRESS].lower()
     valid_email = common_utils.validate_email_address(email=data[constants.EMAIL_ADDRESS])
     if not valid_email:
-        return None, responses.CODE_INVALID_VALUE, responses.MESSAGE_INVALID_VALUE.format(constants.EMAIL_ADDRESS)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_VALUE,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_INVALID_VALUE.format(constants.EMAIL_ADDRESS)))
 
     existing_email_user = database_layer.read_single_record(collection=user_model.User,
                                                             read_filter={constants.EMAIL_ADDRESS:
                                                                          data[constants.EMAIL_ADDRESS]})
     if existing_email_user:
-        return None, responses.CODE_ALREADY_EXISTS, \
-            responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_ALREADY_EXISTS,
+                                                     data=None, 
+                                                     message=responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)))
 
     data[constants.PASSWORD] = common_utils.encrypt_password(
         user_password=data[constants.PASSWORD])
 
     new_user = database_layer.insert_record(collection=user_model.User, data=data)
 
-    return user_utils.get_user_object(user=new_user), responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                 data=user_utils.get_user_object(user=new_user),
+                                                 messsage=responses.MESSAGE_SUCCESS))
 
 
 def read_user_controller(data):
@@ -81,7 +99,9 @@ def read_user_controller(data):
     user_filter_dict = common_utils.get_filtered_items(filter_list=user_filter_items, data=data)
 
     if (user_filter_dict.get(constants.PAGE) and not user_filter_dict.get(constants.LIMIT)) or (user_filter_dict.get(constants.LIMIT) and not user_filter_dict.get(constants.PAGE)):
-        return None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_PAGE_LIMIT
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_PAGE_LIMIT))
     
     if user_filter_dict.get(constants.PAGE) and user_filter_dict.get(constants.LIMIT):
         try:
@@ -92,7 +112,9 @@ def read_user_controller(data):
             user_filter_dict.pop(constants.PAGE)
             user_filter_dict.pop(constants.LIMIT)
         except ValueError:
-            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format("page or limit")
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format("page or limit")))
 
     if user_filter_dict.get(constants.GENDER):
         if user_filter_dict[constants.GENDER].lower() == "male":
@@ -123,7 +145,9 @@ def read_user_controller(data):
     user_objects = database_layer.read_record(collection=user_model.User, read_filter=user_filter_dict, page_options=page_options)
     users = user_utils.filter_user_object(users=user_objects)
 
-    return users, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                 data=users,
+                                                 message=responses.MESSAGE_SUCCESS))
 
 
 def update_user_controller(data):
@@ -133,43 +157,56 @@ def update_user_controller(data):
     :return:
     """
     # TODO Validate input static dictionaries (like gender etc. )
-    if type(data[constants.UID]) != str:
-        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.UID)
+    if type(data[constants.ID]) != str:
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.ID)))
 
     if data.get(constants.NAME):
         if type(data[constants.NAME]) != str:
-            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.NAME)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.NAME)))
 
     if data.get(constants.GENDER):
         if type(data[constants.GENDER]) != dict:
-            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.GENDER)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.GENDER)))
 
     if data.get(constants.DATE_OF_BIRTH):
         if type(data[constants.DATE_OF_BIRTH]) != str:
-            return None, responses.CODE_INVALID_DATA_TYPE, \
-                responses.MESSAGE_INVALID_DATA_TYPE.format(constants.DATE_OF_BIRTH)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.DATE_OF_BIRTH)))
 
         valid_date = common_utils.validate_date_format(date=data[constants.DATE_OF_BIRTH])
         if not valid_date:
-            return None, responses.CODE_INVALID_VALUE, \
-                responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_VALUE,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_VALUE.format(constants.DATE_OF_BIRTH) + ", use format YYYY-MM-DD"))
 
     if data.get(constants.IMAGE):
         if type(data[constants.IMAGE]) != str:
-            return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.IMAGE)))
 
     user = database_layer.read_single_record(collection=user_model.User,
-                                             read_filter={constants.UID: data[constants.UID]})
+                                             read_filter={"_id": data[constants.ID]})
     if not user:
-        return None, responses.CODE_OBJECT_NOT_FOUND, \
-            responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_OBJECT_NOT_FOUND,
+                                                     data=None,
+                                                     message=responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.ID)))
 
     if user != token_utils.get_current_user():
-        return None, responses.CODE_UNAUTHORIZED_ACCESS, responses.MESSAGE_UNAUTHORIZED_ACCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_UNAUTHORIZED_ACCESS,
+                                                     data=None,
+                                                     message=responses.MESSAGE_UNAUTHORIZED_ACCESS))
 
     user_update_data = data
-    uid = data[constants.UID]
-    user_update_data.pop(constants.UID)
+    _id = data[constants.ID]
+    user_update_data.pop(constants.ID)
     user_updatable_fields = [constants.NAME, constants.STATUS, constants.GENDER, constants.DATE_OF_BIRTH, constants.IMAGE]
     filtered_user_update_data = common_utils.get_filtered_items(filter_list=user_updatable_fields,
                                                                 data=user_update_data)
@@ -179,30 +216,38 @@ def update_user_controller(data):
             token_utils.destroy_user_session_tokens(user=user)
 
     updated_user = database_layer.modify_records(collection=user_model.User,
-                                                 read_filter={constants.UID: uid},
+                                                 read_filter={"_id": _id},
                                                  update_filter=filtered_user_update_data)
 
-    return user_utils.get_user_object(user=updated_user), responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                 data=user_utils.get_user_object(user=updated_user),
+                                                 message=responses.MESSAGE_SUCCESS))
 
 
-def delete_user_controller(uid):
+def delete_user_controller(_id):
     """
     This function deletes a user based on uid
-    :param uid:
+    :param _id:
     :return:
     """
-    if not uid:
-        return responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS + ": " + " uid"
+    if not _id:
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_MISSING_PARAMETERS,
+                                                     data=None,
+                                                     message=responses.MESSAGE_MISSING_PARAMETERS + ": " + " id"))
 
     existing_user = database_layer.read_single_record(collection=user_model.User,
-                                                      read_filter={constants.UID: uid,
+                                                      read_filter={"_id": _id,
                                                                    constants.STATUS: static_data.user_status[0]})
     if not existing_user:
-        return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_OBJECT_NOT_FOUND,
+                                                     data=None,
+                                                     message=responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)))
 
     database_layer.delete_record(collection=token_model.Token, delete_filter={constants.USER: existing_user})
-    database_layer.delete_record(collection=user_model.User, delete_filter={constants.UID: uid})
-    return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    database_layer.delete_record(collection=user_model.User, delete_filter={"_id": _id})
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS, 
+                                                 data=None,
+                                                 message=responses.MESSAGE_SUCCESS))
 
 
 def login_user_controller(data):
@@ -212,41 +257,52 @@ def login_user_controller(data):
     :return:
     """
     if type(data[constants.PASSWORD]) != str:
-        return None, responses.CODE_INVALID_DATA_TYPE, \
-            responses.MESSAGE_INVALID_DATA_TYPE.format(constants.PASSWORD)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.PASSWORD)))
 
     if type(data[constants.EMAIL_ADDRESS]) != str:
-        return None, None, responses.CODE_INVALID_DATA_TYPE, \
-            responses.MESSAGE_INVALID_DATA_TYPE.format(constants.EMAIL_ADDRESS)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.EMAIL_ADDRESS)))
 
     data[constants.EMAIL_ADDRESS] = data[constants.EMAIL_ADDRESS].lower()
 
     valid_email = common_utils.validate_email_address(email=data[constants.EMAIL_ADDRESS])
     if not valid_email:
-        return None, responses.CODE_INVALID_VALUE, responses.MESSAGE_INVALID_VALUE.format(constants.EMAIL_ADDRESS)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_VALUE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_VALUE.format(constants.EMAIL_ADDRESS)))
 
     user = database_layer.read_single_record(collection=user_model.User,
                                              read_filter={constants.EMAIL_ADDRESS: data[constants.EMAIL_ADDRESS]})
     if not user:
-        return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, \
-            responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD))
 
     if user[constants.STATUS][constants.ID] == 3:
-        return None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_IS_SUSPENDED
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_SUSPENDED, 
+                                                     data=None, 
+                                                     message=responses.MESSAGE_USER_IS_SUSPENDED))
 
     if user[constants.STATUS][constants.ID] != 1:
-        return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, \
-               responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD
+        return jsonify(responses.get_response(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                              data=None,
+                                              message=responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD))
 
     if not common_utils.compare_password(password_hash=user[constants.PASSWORD],
                                          user_password=data[constants.PASSWORD]):
-        return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, \
-            responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD
+        return jsonify(responses.get_response(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                              data=None,
+                                              message=responses.MESSAGE_INVALID_EMAIL_ADDRESS_OR_PASSWORD))
 
     token_utils.destroy_user_session_tokens(user=user)
     token = token_utils.generate_session_token(user=user)
 
-    return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response(statusCode=responses.CODE_SUCCESS,
+                                          data={"user": user_utils.get_user_object(user), "session-key": token},
+                                          message=responses.MESSAGE_SUCCESS))
 
 
 def logout_user_controller(token):
@@ -256,7 +312,9 @@ def logout_user_controller(token):
     :return:
     """
     token_utils.expire_token(token)
-    return responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response(statusCode=responses.CODE_SUCCESS,
+                                          data=None,
+                                          message=responses.MESSAGE_SUCCESS))
 
 
 def forgot_password_email(email_address):
@@ -267,25 +325,36 @@ def forgot_password_email(email_address):
     :param email_address:
     :return:
     """
+    if type(email_address) != str:
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format(constants.EMAIL_ADDRESS)))
 
     if not common_utils.validate_email_address(email_address):
-        return responses.CODE_INVALID_EMAIL_ADDRESS, responses.MESSAGE_INVALID_EMAIL_ADDRESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_VALUE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_VALUE.format(constants.EMAIL_ADDRESS)))
 
     user = database_layer.read_single_record(user_model.User, {constants.EMAIL_ADDRESS: email_address})
     if not user:
-        print(f">>>>>>>>>>>>>>>>>>>>>>>>> USER NOT FOUND {email_address}")
-        return responses.CODE_INVALID_EMAIL_ADDRESS, responses.MESSAGE_INVALID_EMAIL_ADDRESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_OBJECT_NOT_FOUND,
+                                                     data=None,
+                                                     message=responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.EMAIL_ADDRESS)))
 
     # BLOCKING FORGOT PASSWORD ON OAUTH SIGN UP
     if user[constants.REGISTRATION_CHANNEL][constants.ID] != 1:
-        return responses.CODE_INVALID_CALL, "cannot reset password for user signed up with google, facebook or apple"
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message="cannot reset password for user signed up with google, facebook or apple"))
 
     verification_url = token_utils.generate_forgot_password_verification_url(user)
     thread = Thread(target=common_utils.send_mail(), args=("Reset Password Link", user[constants.EMAIL_ADDRESS],
                     "Dear {}, to reset your password, click on the following link: \n{}".format(user.name, verification_url)))
     thread.start()
 
-    return responses.CODE_SUCCESS, responses.MESSAGE_RESET_PASSWORD_EMAIL_SENT
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                 data=None,
+                                                 message=responses.MESSAGE_RESET_PASSWORD_EMAIL_SENT))
 
 
 def change_password_by_token(user_id, token, password):
@@ -299,9 +368,11 @@ def change_password_by_token(user_id, token, password):
     :return:
     """
     user = database_layer.read_single_record(collection=user_model.User,
-                                             read_filter={constants.UID: user_id})
+                                             read_filter={"_id": user_id})
     if not user:
-        return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_OBJECT_NOT_FOUND,
+                                                     data=None,
+                                                     message=responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.ID)))
 
     read_filter = {constants.USER: user, constants.TOKEN: token, 
                    constants.PURPOSE: constants.FORGOT_PASSWORD, constants.IS_EXPIRED: False}
@@ -309,19 +380,25 @@ def change_password_by_token(user_id, token, password):
     verification_token = database_layer.read_single_record(token_model.Token, read_filter)
 
     if not verification_token:
-        return responses.CODE_INVALID_TOKEN, responses.MESSAGE_INVALID_TOKEN
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_TOKEN,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_TOKEN))
 
     token_utils.expire_token(verification_token)
 
     if verification_token[constants.EXPIRY_TIME] < common_utils.get_current_time():
-        return responses.CODE_TOKEN_EXPIRED, responses.MESSAGE_TOKEN_EXPIRED
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_TOKEN_EXPIRED,
+                                                     data=None,
+                                                     message=responses.MESSAGE_TOKEN_EXPIRED))
 
     password = common_utils.encrypt_password(password)
     update_filter = {constants.PASSWORD: password}
 
-    database_layer.modify_records(user_model.User, {constants.UID: user_id}, update_filter)
+    database_layer.modify_records(user_model.User, {"_id": user_id}, update_filter)
 
-    return responses.CODE_SUCCESS, responses.MESSAGE_PASSWORD_CHANGED
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                data=None,
+                                                message=responses.MESSAGE_PASSWORD_CHANGED))
 
 
 def change_password_controller(user_id, old_password, new_password):
@@ -334,28 +411,40 @@ def change_password_controller(user_id, old_password, new_password):
     :return:
     """
     user = database_layer.read_single_record(collection=user_model.User,
-                                             read_filter={constants.UID: user_id})
+                                             read_filter={"_id": user_id})
     if not user:
-        return responses.CODE_OBJECT_NOT_FOUND, responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.UID)
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_OBJECT_NOT_FOUND,
+                                                     data=None,
+                                                     message=responses.MESSAGE_OBJECT_NOT_FOUND.format(constants.USER, constants.ID)))
 
     if user != token_utils.get_current_user():
-        return responses.CODE_UNAUTHORIZED_ACCESS, responses.MESSAGE_UNAUTHORIZED_ACCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_UNAUTHORIZED_ACCESS,
+                                                     data=None,
+                                                     message=responses.MESSAGE_UNAUTHORIZED_ACCESS))
 
     # BLOCKING CHANGE PASSWORD ON OAUTH SIGN UP
     if user[constants.REGISTRATION_CHANNEL][constants.ID] != 1:
-        return responses.CODE_INVALID_CALL, "Cannot change password on social signup"
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message="Cannot change password on social signup"))
 
     if not common_utils.compare_password(user[constants.PASSWORD], old_password):
-        return responses.CODE_INVALID_PASSWORD, responses.MESSAGE_PASSWORD_NOT_MATCH
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_PASSWORD,
+                                                     data=None,
+                                                     message=responses.MESSAGE_PASSWORD_NOT_MATCH))
 
     if old_password == new_password:
-        return responses.CODE_INVALID_CALL, "Error: You are using a previously used password"
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message="Error: You are using a previously used password"))
 
     password, password_salt = common_utils.encrypt_password(new_password)
-    database_layer.modify_records(user_model.User, {constants.UID: user_id}, {constants.PASSWORD: password,
-                                                                              constants.PASSWORD_SALT: password_salt})
+    database_layer.modify_records(user_model.User, {"_id": user_id}, {constants.PASSWORD: password,
+                                                                      constants.PASSWORD_SALT: password_salt})
 
-    return responses.CODE_SUCCESS, responses.MESSAGE_PASSWORD_CHANGED
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                 data=None,
+                                                 message=responses.MESSAGE_PASSWORD_CHANGED))
 
 
 def upload_image_controller(_file, _type):
@@ -366,20 +455,23 @@ def upload_image_controller(_file, _type):
     :return string of url for firebase uploaded image:
     """
     if not _file:
-        return None, responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS
-
-    if not _file:
-        return None, responses.CODE_MISSING_PARAMETERS, responses.MESSAGE_MISSING_PARAMETERS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_MISSING_PARAMETERS,
+                                                     data=None,
+                                                     message=responses.MESSAGE_MISSING_PARAMETERS + ": file"))
 
     if _type is None:
         _type = 0
 
     if type(_type) == str and not _type.isdigit():
-        return None, responses.CODE_INVALID_DATA_TYPE, responses.MESSAGE_INVALID_DATA_TYPE.format("file type in url")
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_DATA_TYPE,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_DATA_TYPE.format('file type in url')))
 
     file_type = int(_type)
     if file_type not in [0, 1, 2, 3, 4, 5]:
-        return None, responses.CODE_INVALID_CALL, "File type in URL incorrect: should be either 0, 1, 2, 3, 4 or 5"
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message="File type in URL incorrect: should be either 0, 1, 2, 3, 4 or 5"))
 
     file_name = str(uuid.uuid4()) + "_" + datetime.now().strftime("%Y_%m_%d-%H_%M")
     extension = _file.filename.split('.')[-1]
@@ -387,31 +479,45 @@ def upload_image_controller(_file, _type):
     if file_type is not None:
         if file_type == 1:
             if extension.lower() not in constants.IMAGE_FORMATS:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.IMAGE_FORMATS)
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + constants.IMAGE_FORMATS ))
 
         elif file_type == 2:
             if extension.lower() not in [constants.DOCX, constants.PDF]:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format([constants.DOCX, constants.PDF])
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + [constants.DOCX, constants.PDF] ))
 
         elif file_type == 3:
             if extension.lower() not in constants.MP4:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.MP4)
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + constants.MP4 ))
 
         elif file_type == 4:
             if extension.lower() not in constants.MP3:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.MP3)
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + constants.MP3 ))
 
         elif file_type == 5:
             if extension.lower() not in constants.EXCEL_FORMATS:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.EXCEL_FORMATS)
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + constants.EXCEL_FORMATS ))
 
         elif file_type == 0:
             if extension.lower() not in constants.FILE_FORMATS:
-                return None, responses.CODE_INVALID_FILE_FORMAT, responses.MESSAGE_INVALID_FILE_FORMAT.format(constants.FILE_FORMATS)
+                return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                             data=None,
+                                                             message=responses.MESSAGE_INVALID_CALL +" : allowed formats include: " + constants.FILE_FORMATS ))
 
     url = firebase_app.upload_file_using_string(source_file=_file.stream.read(), filename=file_name, extension=extension, content_type=_file.content_type)
 
-    return url, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+    return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                data={"url": url},
+                                                message=responses.MESSAGE_SUCCESS))
 
 
 def social_signup_controller(oauth_code, _type, name=None):
@@ -424,7 +530,9 @@ def social_signup_controller(oauth_code, _type, name=None):
     """
 
     if _type not in [constants.FACEBOOK, constants.GOOGLE, constants.APPLE]:
-        return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                     data=None,
+                                                     message=responses.MESSAGE_INVALID_CALL ))
 
     elif _type == constants.GOOGLE:
         response = requests.post(
@@ -441,7 +549,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         app.logger.error("GOOGLE TOKEN URI RESPONSE: ", str(response.json()))
 
         if response.status_code != 200:
-            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         user_info = user_utils.get_user_info_by_media(response.json()["access_token"], constants.GOOGLE,
                                                       config.GOOGLE_CONFIG["web"]["get_user_info_uri"])
@@ -452,7 +562,9 @@ def social_signup_controller(oauth_code, _type, name=None):
                                                  read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
 
         if user:
-            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_ALREADY_EXISTS,
+                                                         data=None,
+                                                         message=responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS) ))
 
         user_data = {
             constants.NAME: user_info[constants.NAME],
@@ -469,7 +581,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         token_utils.destroy_user_session_tokens(new_user)
         token = token_utils.generate_session_token(user=new_user)
 
-        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(new_user), "session-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))
 
     elif _type == constants.FACEBOOK:
         response = requests.get(
@@ -483,14 +597,18 @@ def social_signup_controller(oauth_code, _type, name=None):
         app.logger.error("FACEBOOK RESPONSE: ", str(response.json()))
 
         if response.status_code != 200:
-            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         user_info = response.json()
 
         user = database_layer.read_single_record(collection=user_model.User,
                                                  read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
         if user:
-            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_ALREADY_EXISTS,
+                                                         data=None,
+                                                         message=responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS) ))
 
         if not user_info.get(constants.EMAIL):
             uid = str(uuid.uuid4())
@@ -510,7 +628,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         token_utils.destroy_user_session_tokens(new_user)
         token = token_utils.generate_session_token(user=new_user)
 
-        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(new_user), "session-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))
 
     elif _type == constants.APPLE:
 
@@ -548,7 +668,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         app.logger.error("APPLE TOKEN URI RESPONSE: " + str(response.json()))
 
         if response.status_code != 200:
-            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         response = response.json()
 
@@ -562,7 +684,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         user = database_layer.read_single_record(collection=user_model.User,
                                                  read_filter={constants.EMAIL_ADDRESS: user_info[constants.EMAIL]})
         if user:
-            return None, None, responses.CODE_ALREADY_EXISTS, responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_ALREADY_EXISTS,
+                                                         data=None,
+                                                         message=responses.MESSAGE_ALREADY_EXISTS.format(constants.USER, constants.EMAIL_ADDRESS) ))
 
         if name is None:
             name = user_info[constants.EMAIL][0:int(user_info[constants.EMAIL].find("@"))]
@@ -580,7 +704,9 @@ def social_signup_controller(oauth_code, _type, name=None):
         token_utils.destroy_user_session_tokens(new_user)
         token = token_utils.generate_session_token(user=new_user)
 
-        return user_utils.get_user_object(new_user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(new_user), "sesion-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))
 
 
 def social_login_controller(oauth_code, _type):
@@ -608,7 +734,9 @@ def social_login_controller(oauth_code, _type):
         app.logger.error("GOOGLE TOKEN URI RESPONSE: ", str(response.json()))
 
         if response.status_code != 200:
-            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         user_info = user_utils.get_user_info_by_media(response.json()["access_token"], _type,
                                                       config.GOOGLE_CONFIG["web"]["get_user_info_uri"])
@@ -622,18 +750,26 @@ def social_login_controller(oauth_code, _type):
                                                  })
 
         if not user:
-            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.GOOGLE)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                                         data=None,
+                                                         message=responses.MESSAGE_SIGNUP_FIRST.format(constants.GOOGLE) ))
 
         if user[constants.STATUS][constants.ID] == 3:
-            return None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_SUSPENDED,
+                                                         data=None,
+                                                         message=responses.MESSAGE_USER_CANNOT_LOGIN ))
 
         if user[constants.STATUS][constants.ID] != 1:
-            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_INACTIVE,
+                                                         data={"user": user_utils.get_user_object(user)},
+                                                         message=responses.MESSAGE_USER_IS_INACTIVE ))
 
         token_utils.destroy_user_session_tokens(user)
         token = token_utils.generate_session_token(user)
 
-        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(user), "session-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))
 
     elif _type == constants.FACEBOOK:
         response = requests.get(
@@ -645,7 +781,9 @@ def social_login_controller(oauth_code, _type):
         )
 
         if response.status_code != 200:
-            return None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         user_info = response.json()
 
@@ -658,18 +796,26 @@ def social_login_controller(oauth_code, _type):
                                                  })
 
         if not user:
-            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.FACEBOOK)
+            return jsonify(responses.get_respone_object(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                                        data=None,
+                                                        message=responses.MESSAGE_SIGNUP_FIRST.format(constants.FACEBOOK)))
 
         if user[constants.STATUS][constants.ID] == 3:
-            return None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_SUSPENDED,
+                                                         data=None,
+                                                         message=responses.MESSAGE_USER_CANNOT_LOGIN ))
 
         if user[constants.STATUS][constants.ID] != 1:
-            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_INACTIVE,
+                                                         data={"user": user_utils.get_user_object(user)},
+                                                         message=responses.MESSAGE_USER_IS_INACTIVE ))
 
         token_utils.destroy_user_session_tokens(user)
         token = token_utils.generate_session_token(user)
 
-        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(user), "session-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))
 
     elif _type == constants.APPLE:
         oauth_payload = {
@@ -705,7 +851,9 @@ def social_login_controller(oauth_code, _type):
         app.logger.error("APPLE TOKEN URI RESPONSE: " + str(response.json()))
 
         if response.status_code != 200:
-            return None, None, None, responses.CODE_INVALID_CALL, responses.MESSAGE_INVALID_CALL
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_CALL,
+                                                         data=None,
+                                                         message=responses.MESSAGE_INVALID_CALL ))
 
         response = response.json()
 
@@ -722,15 +870,23 @@ def social_login_controller(oauth_code, _type):
                                                      constants.REGISTRATION_CHANNEL: static_data.registration_channel[3]
                                                  })
         if not user:
-            return None, None, responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD, responses.MESSAGE_SIGNUP_FIRST.format(constants.APPLE)
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_INVALID_EMAIL_ADDRESS_OR_PASSWORD,
+                                                         data=None,
+                                                         message=responses.MESSAGE_SIGNUP_FIRST.format(constants.APPLE) ))
 
         if user[constants.STATUS][constants.ID] == 3:
-            return None, None, None, responses.CODE_USER_IS_SUSPENDED, responses.MESSAGE_USER_CANNOT_LOGIN
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_SUSPENDED,
+                                                         data=None,
+                                                         message=responses.MESSAGE_USER_CANNOT_LOGIN ))
 
         if user[constants.STATUS][constants.ID] != 1:
-            return user_utils.get_user_object(user), None, responses.CODE_USER_IS_INACTIVE, responses.MESSAGE_USER_IS_INACTIVE
+            return jsonify(responses.get_response_object(statusCode=responses.CODE_USER_IS_INACTIVE,
+                                                         data={"user": user_utils.get_user_object(user)},
+                                                         message=responses.MESSAGE_USER_IS_INACTIVE ))
 
         token_utils.destroy_user_session_tokens(user)
         token = token_utils.generate_session_token(user)
 
-        return user_utils.get_user_object(user), token, responses.CODE_SUCCESS, responses.MESSAGE_SUCCESS
+        return jsonify(responses.get_response_object(statusCode=responses.CODE_SUCCESS,
+                                                     data={"user": user_utils.get_user_object(user), "session-key": token},
+                                                     message=responses.MESSAGE_SUCCESS ))

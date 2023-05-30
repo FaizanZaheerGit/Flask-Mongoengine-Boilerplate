@@ -1,5 +1,4 @@
 # Python imports
-import uuid
 
 # Framework Imports
 
@@ -10,7 +9,6 @@ from FlaskMongoengineBoilerplate.utils import common_utils
 
 
 class User(db.Document):
-    uid = db.StringField(default=str(uuid.uuid4()), unqiue=True)
     oauth_code = db.StringField(default="")
     name = db.StringField(required=True)
     email_address = db.EmailField(required=True)

@@ -1,5 +1,4 @@
 # Python imports
-import uuid
 
 # Framework Imports
 
@@ -10,7 +9,6 @@ from FlaskMongoengineBoilerplate.utils import common_utils
 
 
 class Token(db.Document):
-    uid = db.StringField(default=str(uuid.uuid4()), unique=True)
     user = db.ReferenceField(User, required=True)
     token = db.StringField(required=True)
     purpose = db.StringField(required=True)

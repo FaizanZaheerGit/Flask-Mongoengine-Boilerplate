@@ -27,7 +27,7 @@ def get_user_object(user):
     :return an object of a user:
     """
     user_data = {
-        constants.UID: user[constants.UID],
+        constants.ID: user["_id"],
         constants.NAME: user[constants.NAME],
         constants.EMAIL_ADDRESS: user[constants.EMAIL_ADDRESS],
         constants.STATUS: user[constants.STATUS],

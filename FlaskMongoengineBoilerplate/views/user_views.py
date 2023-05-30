@@ -1,7 +1,7 @@
 # Python imports
 
 # Framework imports
-from flask import jsonify, request, Blueprint
+from flask import request, Blueprint
 
 # Local imports
 from FlaskMongoengineBoilerplate import app
@@ -22,16 +22,7 @@ def create_user_view(data):
     :param data:
     :return:
     """
-    user, response_code, response_message = user_controller.create_user_controller(data)
-    response_obj = {}
-    if response_code != responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_message=response_message)
-    elif response_code == responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_data={"user": user},
-                                                     response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.create_user_controller(data)
 
 
 @user_bp.route('/read', methods=["GET"])
@@ -44,22 +35,13 @@ def read_user_view():
     :return:
     """
     data = common_utils.get_posted_data(method="GET")
-    users, response_code, response_message = user_controller.read_user_controller(data)
-    response_obj = {}
-    if response_code != responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_message=response_message)
-    elif response_code == responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_data={"users": users},
-                                                     response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.read_user_controller(data)
 
 
 @user_bp.route('/update', methods=["PUT"])
 @decorators.logging
 @decorators.is_authenticated
-@decorators.validator(required_fields=[constants.UID],
+@decorators.validator(required_fields=[constants.ID],
                       optional_fields=[constants.NAME, constants.GENDER, constants.DATE_OF_BIRTH, constants.STATUS, constants.IMAGE])
 def update_user_view(data):
     """
@@ -67,31 +49,19 @@ def update_user_view(data):
     :param data:
     :return:
     """
-    user, response_code, response_message = user_controller.update_user_controller(data)
-    response_obj = {}
-    if response_code != responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_message=response_message)
-    elif response_code == responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_data={"user": user},
-                                                     response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.update_user_view(data)
 
 
-@user_bp.route('/delete/<uid>', methods=["DELETE"])
+@user_bp.route('/delete/<id>', methods=["DELETE"])
 @decorators.logging
 @decorators.is_authenticated
-def delete_user_view(uid):
+def delete_user_view(id):
     """
     This API deletes a user
-    :param uid:
+    :param id:
     :return:
     """
-    response_code, response_message = user_controller.delete_user_controller(uid)
-    response_obj = responses.get_response_object(response_code=response_code,
-                                                 response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.delete_user_controller(id)
 
 
 @user_bp.route('/login', methods=["POST"])
@@ -103,20 +73,10 @@ def login_view(data):
     :param data:
     :return:
     """
-    user, token, response_code, response_message = user_controller.login_user_controller(data)
-    response_obj = {}
-    if response_code != responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_message=response_message)
-    elif response_code == responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_data={"user": user,
-                                                                    "session-key": token},
-                                                     response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.login_user_controller(data)
 
 
-@user_bp.route('/logout', methods=["POST"])
+@user_bp.route('/logout', methods=["GET", "POST"])
 @decorators.logging
 @decorators.is_authenticated
 def logout_view():
@@ -126,10 +86,7 @@ def logout_view():
     :return:
     """
     token = request.headers.get("session-key", None)
-    response_code, response_message = user_controller.logout_user_controller(token)
-    response_obj = responses.get_response_object(response_code=response_code,
-                                                 response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.logout_user_controller(token)
 
 
 @user_bp.route('/forgot-password', methods=["PATCH"])
@@ -142,16 +99,7 @@ def forgot_password(data):
     :param data:
     :return:
     """
-    response_code, response_message = user_controller.forgot_password_email(data[constants.EMAIL_ADDRESS])
-
-    if response_code != responses.CODE_SUCCESS:
-        response = responses.get_response_object(response_code=response_code,
-                                                 response_message=response_message)
-        return jsonify(response)
-
-    response = responses.get_response_object(response_code=response_code,
-                                             response_message=response_message)
-    return jsonify(response)
+    return user_controller.forgot_password_email(data[constants.EMAIL_ADDRESS])
 
 
 @user_bp.route("/reset-password", methods=['PATCH'])
@@ -164,19 +112,8 @@ def user_change_password_token(data):
     :param data:
     :return:
     """
-    response_code, response_message = \
-        user_controller.change_password_by_token(data[constants.ID], data[constants.TOKEN],
-                                                 data[constants.NEW_PASSWORD])
-
-    if response_code != responses.CODE_SUCCESS:
-        print(">>>>>>>>>>>>>>>>>>>>>>>> Password not changed by token.. >>>>>>>>>>>>>>>>>>>>>>")
-        response = responses.get_response_object(response_code=response_code,
-                                                 response_message=response_message)
-        return jsonify(response)
-
-    response = responses.get_response_object(response_code=response_code,
-                                             response_message=response_message)
-    return jsonify(response)
+    return user_controller.change_password_by_token(data[constants.ID], data[constants.TOKEN],
+                                                    data[constants.NEW_PASSWORD])
 
 
 @user_bp.route("/change-password", methods=["PATCH"])
@@ -189,18 +126,8 @@ def change_password_view(data):
     :param data:
     :return:
     """
-    response_code, response_message = \
-        user_controller.change_password_controller(data[constants.ID], data[constants.OLD_PASSWORD],
-                                        data[constants.NEW_PASSWORD])
-
-    if response_code != responses.CODE_SUCCESS:
-        response = responses.get_response_object(response_code=response_code,
-                                                 response_message=response_message)
-        return jsonify(response)
-
-    response = responses.get_response_object(response_code=response_code,
-                                             response_message=response_message)
-    return jsonify(response)
+    return user_controller.change_password_controller(data[constants.ID], data[constants.OLD_PASSWORD],
+                                                      data[constants.NEW_PASSWORD])
 
 
 @user_bp.route("/upload/<_type>", methods=["POST"])
@@ -212,17 +139,7 @@ def upload_image_view(_type):
     :return:
     """
     image = common_utils.get_posted_files().get(constants.IMAGE)
-
-    url, response_code, response_message = user_controller.upload_image_controller(_file=image, _type=_type)
-    response_obj = {}
-    if response_code != responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_message=response_message)
-    elif response_code == responses.CODE_SUCCESS:
-        response_obj = responses.get_response_object(response_code=response_code,
-                                                     response_data={"url": url},
-                                                     response_message=response_message)
-    return jsonify(response_obj)
+    return user_controller.upload_image_controller(_file=image, _type=_type)
 
 
 @user_bp.route("/social/signup/<_type>", methods=["POST"])
@@ -237,20 +154,7 @@ def social_oauth_signup(data, _type):
     """
     oauth_code = data[constants.OAUTH_CODE]
     name = data.get(constants.NAME, None)
-    user, session_token, response_code, response_message = \
-        user_controller.social_signup_controller(oauth_code, _type, name)
-
-    if response_code != responses.CODE_SUCCESS:
-        response = responses.get_response_object(response_code=response_code,
-                                                      response_message=response_message)
-
-        return jsonify(response)
-
-    response = responses.get_response_object(response_code=response_code,
-                                             response_data={"user": user,
-                                                            "session-key": session_token},
-                                             response_message=response_message)
-    return jsonify(response)
+    return user_controller.social_signup_controller(oauth_code, _type, name)
 
 
 @user_bp.route("/social/login/<_type>", methods=["POST"])
@@ -258,26 +162,4 @@ def social_oauth_signup(data, _type):
 @decorators.validator([constants.OAUTH_CODE])
 def social_oauth_login(data, _type):
     oauth_code = data[constants.OAUTH_CODE]
-
-    user, session_token, response_code, response_message = \
-        user_controller.social_login_controller(oauth_code=oauth_code, _type=_type)
-
-    if response_code == responses.CODE_USER_IS_INACTIVE:
-        response = responses.get_response_object(response_code=response_code,
-                                                 response_data={"user": user,
-                                                                "session-key": session_token},
-                                                 response_message=response_message)
-
-        return jsonify(response)
-
-    if response_code != responses.CODE_SUCCESS:
-        response = responses.get_response_object(response_code=response_code, 
-                                                 response_message=response_message)
-        return jsonify(response)
-
-    response = responses.get_response_object(response_code=response_code,
-                                             response_data={"user": user,
-                                                            "session-key": session_token},
-                                             response_message=response_message)
-
-    return jsonify(response)
+    return user_controller.social_login_controller(oauth_code=oauth_code, _type=_type)
