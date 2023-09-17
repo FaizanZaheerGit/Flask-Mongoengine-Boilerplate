@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:5.0
+    container_name: flask-mongoengine-test-mongo
+    restart: unless_stopped
+    env_file:
+      - .env
+    ports:
+      - 27018:27017
+    volumes:
+      - mongodb_container:/data/db
+
+  apis:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./Flask-Mongoengine-Boilerplate
+    ports:
+      - ${PORT}:${PORT}
+    command: python app.py
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_container:
